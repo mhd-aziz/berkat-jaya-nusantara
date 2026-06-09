@@ -297,6 +297,23 @@
                                 </label>
                             </div>
                         </div>
+
+                        <div class="md:col-span-2 bg-gray-50 border rounded-lg p-4">
+                            <div class="flex justify-between mb-2">
+                                <span>Subtotal Penjualan</span>
+                                <strong id="totalSubtotal">Rp 0</strong>
+                            </div>
+
+                            <div class="flex justify-between mb-2">
+                                <span>Nilai Pajak</span>
+                                <strong id="totalPajak">Rp 0</strong>
+                            </div>
+
+                            <div class="flex justify-between border-t pt-2 text-lg">
+                                <span>Total Akhir</span>
+                                <strong id="totalAkhir">Rp 0</strong>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="flex justify-end gap-2 mt-6">
@@ -350,12 +367,16 @@
                     </div>
 
                     <div>
-                        <label class="block mb-1 font-medium">Nomor Telepon</label>
+                        <label class="block mb-1 font-medium">Nomor Handphone <span class="text-red-600">*</span></label>
                         <input type="text"
                             name="nomor_telepon"
                             id="quickNomorTelepon"
                             class="w-full border-gray-300 rounded-md shadow-sm"
-                            placeholder="Contoh: 08123456789">
+                            placeholder="Contoh: 08123456789"
+                            required>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Jika nama atau nomor handphone sudah tersedia, customer lama akan langsung dipilih.
+                        </p>
                     </div>
 
                     <div>
@@ -451,24 +472,41 @@
         function tambahCustomerKeSelect(customer) {
             const customerSelect = document.getElementById('customerSelect');
 
+            if (!customerSelect || !customer) {
+                return;
+            }
+
+            const customerId = String(customer.id_customer);
             let optionText = customer.kode_customer + ' - ' + customer.nama_customer;
 
             if (customer.nomor_telepon) {
                 optionText += ' | ' + customer.nomor_telepon;
             }
 
+            const existingOption = customerSelect.querySelector('option[value="' + customerId + '"]');
+
+            if (!existingOption) {
+                customerSelect.add(new Option(optionText, customerId));
+            } else {
+                existingOption.textContent = optionText;
+            }
+
             if (customerSelect.tomselect) {
                 customerSelect.tomselect.addOption({
-                    value: customer.id_customer,
+                    value: customerId,
                     text: optionText
                 });
 
-                customerSelect.tomselect.addItem(customer.id_customer);
+                customerSelect.tomselect.updateOption(customerId, {
+                    value: customerId,
+                    text: optionText
+                });
+
+                customerSelect.tomselect.setValue(customerId, true);
                 customerSelect.tomselect.refreshOptions(false);
+                customerSelect.tomselect.sync();
             } else {
-                const option = new Option(optionText, customer.id_customer, true, true);
-                customerSelect.add(option);
-                customerSelect.value = customer.id_customer;
+                customerSelect.value = customerId;
             }
         }
 
@@ -518,7 +556,7 @@
                 tambahCustomerKeSelect(result.customer);
                 tutupModalCustomer();
 
-                alert('Customer berhasil ditambahkan dan otomatis dipilih.');
+                alert(result.message || 'Customer berhasil dipilih.');
             } catch (error) {
                 errorBox.innerHTML = 'Terjadi kesalahan koneksi. Silakan coba lagi.';
                 errorBox.classList.remove('hidden');
@@ -715,8 +753,6 @@
         document.addEventListener('DOMContentLoaded', function() {
             initCustomerSelect();
             initAllBarangSelect();
-            updateMetodePembayaran();
-            hitungTotal();
 
             document.getElementById('btnBukaModalCustomer').addEventListener('click', bukaModalCustomer);
             document.getElementById('btnTutupModalCustomer').addEventListener('click', tutupModalCustomer);
@@ -728,6 +764,9 @@
                     tutupModalCustomer();
                 }
             });
+
+            updateMetodePembayaran();
+            hitungTotal();
         });
     </script>
 </x-app-layout>
