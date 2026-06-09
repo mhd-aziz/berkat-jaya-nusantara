@@ -187,6 +187,23 @@ class PembelianController extends Controller
         return view('pembelian.show', compact('pembelian'));
     }
 
+    public function exportExcel(Pembelian $pembelian)
+    {
+        $pembelian->load([
+            'supplier',
+            'user',
+            'detailPembelian.barang',
+        ]);
+
+        $fileName = 'Nota-Pembelian-' . $pembelian->nomor_pembelian . '.xls';
+
+        return response()
+            ->view('pembelian.export-excel', compact('pembelian'))
+            ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"')
+            ->header('Cache-Control', 'max-age=0');
+    }
+
     private function generateNomorPembelian(bool $lock = false)
     {
         $tanggal = now()->format('Ymd');

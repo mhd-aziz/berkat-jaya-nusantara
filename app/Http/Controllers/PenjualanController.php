@@ -207,6 +207,24 @@ class PenjualanController extends Controller
         return view('penjualan.show', compact('penjualan'));
     }
 
+    public function exportExcel(Penjualan $penjualan)
+    {
+        $penjualan->load([
+            'customer',
+            'user',
+            'detailPenjualan.barang',
+            'piutang',
+        ]);
+
+        $fileName = 'Invoice-' . $penjualan->nomor_invoice . '.xls';
+
+        return response()
+            ->view('penjualan.export-excel', compact('penjualan'))
+            ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"')
+            ->header('Cache-Control', 'max-age=0');
+    }
+
     private function generateNomorInvoice(bool $lock = false)
     {
         $tanggal = now()->format('Ymd');

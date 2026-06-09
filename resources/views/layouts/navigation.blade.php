@@ -133,8 +133,46 @@
                         </x-slot>
                     </x-dropdown>
 
+                    <x-dropdown align="left" width="56">
+                        <x-slot name="trigger">
+                            <button class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition
+            {{ request()->routeIs('laporan.*')
+                ? 'text-blue-700 bg-blue-50'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50' }}">
+                                Laporan
+
+                                <svg class="ms-1 h-4 w-4"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </x-slot>
+
+                        <x-slot name="content">
+                            <x-dropdown-link :href="route('laporan.penjualan')">
+                                Laporan Penjualan
+                            </x-dropdown-link>
+
+                            <x-dropdown-link :href="route('laporan.pembelian')">
+                                Laporan Pembelian
+                            </x-dropdown-link>
+
+                            <x-dropdown-link :href="route('laporan.piutang')">
+                                Laporan Piutang
+                            </x-dropdown-link>
+
+                            <x-dropdown-link :href="route('laporan.stokBarang')">
+                                Laporan Stok Barang
+                            </x-dropdown-link>
+                        </x-slot>
+                    </x-dropdown>
+
                     <!-- Quick Create Dropdown -->
-                    
+
                 </div>
             </div>
 
@@ -249,6 +287,26 @@
 
             <x-responsive-nav-link :href="route('invoice-historis.index')" :active="request()->routeIs('invoice-historis.*')">
                 Invoice History
+            </x-responsive-nav-link>
+
+            <div class="px-4 pt-3 pb-1 text-xs font-bold text-gray-400 uppercase">
+                Laporan
+            </div>
+
+            <x-responsive-nav-link :href="route('laporan.penjualan')" :active="request()->routeIs('laporan.penjualan')">
+                Laporan Penjualan
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('laporan.pembelian')" :active="request()->routeIs('laporan.pembelian')">
+                Laporan Pembelian
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('laporan.piutang')" :active="request()->routeIs('laporan.piutang')">
+                Laporan Piutang
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('laporan.stokBarang')" :active="request()->routeIs('laporan.stokBarang')">
+                Laporan Stok Barang
             </x-responsive-nav-link>
         </div>
 

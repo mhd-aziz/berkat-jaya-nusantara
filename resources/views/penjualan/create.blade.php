@@ -75,7 +75,7 @@
                             </select>
 
                             <p class="text-sm text-gray-500 mt-1">
-                                Cari customer lama atau tambah customer baru jika belum terdaftar.
+                                Pilih customer lama atau tambah customer baru jika belum terdaftar.
                             </p>
                         </div>
                     </div>
@@ -148,60 +148,60 @@
                                     </tr>
                                 </tbody>
                             </table>
+
+                            <template id="templateBarangRow">
+                                <tr>
+                                    <td class="border px-3 py-2 min-w-[420px]">
+                                        <select name="id_barang[]"
+                                            class="w-full barang-select"
+                                            placeholder="Cari kode atau nama barang..."
+                                            required>
+                                            <option value="">-- Cari / Pilih Barang --</option>
+                                            @foreach ($barang as $item)
+                                            <option value="{{ $item->id_barang }}"
+                                                data-harga="{{ $item->harga_jual_default }}"
+                                                data-stok="{{ $item->stok_saat_ini }}">
+                                                {{ $item->kode_barang }} - {{ $item->nama_barang }}
+                                                | Stok: {{ $item->stok_saat_ini }}
+                                                | Harga: Rp {{ number_format($item->harga_jual_default, 0, ',', '.') }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                        <p class="text-sm text-gray-500 mt-1 stok-info">Stok tersedia: -</p>
+                                    </td>
+
+                                    <td class="border px-3 py-2">
+                                        <input type="number"
+                                            name="jumlah[]"
+                                            value="1"
+                                            min="1"
+                                            class="w-full border-gray-300 rounded-md shadow-sm text-right jumlah-input"
+                                            required>
+                                    </td>
+
+                                    <td class="border px-3 py-2">
+                                        <input type="number"
+                                            name="harga_jual[]"
+                                            value="0"
+                                            min="0"
+                                            step="0.01"
+                                            class="w-full border-gray-300 rounded-md shadow-sm text-right harga-input"
+                                            required>
+                                    </td>
+
+                                    <td class="border px-3 py-2 text-right">
+                                        <span class="subtotal-text">Rp 0</span>
+                                    </td>
+
+                                    <td class="border px-3 py-2 text-center">
+                                        <button type="button"
+                                            class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 btn-hapus">
+                                            Hapus
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
                         </div>
-
-                        <template id="templateBarangRow">
-                            <tr>
-                                <td class="border px-3 py-2 min-w-[420px]">
-                                    <select name="id_barang[]"
-                                        class="w-full barang-select"
-                                        placeholder="Cari kode atau nama barang..."
-                                        required>
-                                        <option value="">-- Cari / Pilih Barang --</option>
-                                        @foreach ($barang as $item)
-                                        <option value="{{ $item->id_barang }}"
-                                            data-harga="{{ $item->harga_jual_default }}"
-                                            data-stok="{{ $item->stok_saat_ini }}">
-                                            {{ $item->kode_barang }} - {{ $item->nama_barang }}
-                                            | Stok: {{ $item->stok_saat_ini }}
-                                            | Harga: Rp {{ number_format($item->harga_jual_default, 0, ',', '.') }}
-                                        </option>
-                                        @endforeach
-                                    </select>
-                                    <p class="text-sm text-gray-500 mt-1 stok-info">Stok tersedia: -</p>
-                                </td>
-
-                                <td class="border px-3 py-2">
-                                    <input type="number"
-                                        name="jumlah[]"
-                                        value="1"
-                                        min="1"
-                                        class="w-full border-gray-300 rounded-md shadow-sm text-right jumlah-input"
-                                        required>
-                                </td>
-
-                                <td class="border px-3 py-2">
-                                    <input type="number"
-                                        name="harga_jual[]"
-                                        value="0"
-                                        min="0"
-                                        step="0.01"
-                                        class="w-full border-gray-300 rounded-md shadow-sm text-right harga-input"
-                                        required>
-                                </td>
-
-                                <td class="border px-3 py-2 text-right">
-                                    <span class="subtotal-text">Rp 0</span>
-                                </td>
-
-                                <td class="border px-3 py-2 text-center">
-                                    <button type="button"
-                                        class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 btn-hapus">
-                                        Hapus
-                                    </button>
-                                </td>
-                            </tr>
-                        </template>
 
                         <button type="button"
                             id="btnTambahBarang"
@@ -246,59 +246,61 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label class="block mb-1 font-medium">Persentase Pajak (%)</label>
-                            <input type="number"
-                                name="persentase_pajak"
-                                id="persentasePajak"
-                                value="{{ old('persentase_pajak', 0) }}"
-                                min="0"
-                                max="100"
-                                step="0.01"
-                                class="w-full border-gray-300 rounded-md shadow-sm text-right">
+                        <div class="bg-gray-50 p-4 rounded-md border">
+                            <div class="mb-4">
+                                <label class="block mb-1 font-medium">Persentase Pajak (%)</label>
+                                <input type="number"
+                                    name="persentase_pajak"
+                                    id="persentasePajak"
+                                    value="{{ old('persentase_pajak', 0) }}"
+                                    min="0"
+                                    max="100"
+                                    step="0.01"
+                                    class="w-full border-gray-300 rounded-md shadow-sm text-right">
 
-                            <p class="text-sm text-gray-500 mt-1">
-                                Pajak tetap bisa ditampilkan di invoice, walaupun tidak ditambahkan ke total akhir.
-                            </p>
-                        </div>
-
-                        <div class="mb-4">
-                            <label class="block mb-2 font-medium">Perhitungan Pajak</label>
-
-                            <div class="space-y-2">
-                                <label class="flex items-start gap-2">
-                                    <input type="radio"
-                                        name="pajak_ditambahkan"
-                                        value="1"
-                                        class="mt-1"
-                                        {{ old('pajak_ditambahkan', '1') == '1' ? 'checked' : '' }}>
-                                    <span>
-                                        <strong>Pajak ditambahkan ke total</strong>
-                                        <br>
-                                        <small class="text-gray-500">
-                                            Untuk customer yang memang dikenakan pajak.
-                                        </small>
-                                    </span>
-                                </label>
-
-                                <label class="flex items-start gap-2">
-                                    <input type="radio"
-                                        name="pajak_ditambahkan"
-                                        value="0"
-                                        class="mt-1"
-                                        {{ old('pajak_ditambahkan') == '0' ? 'checked' : '' }}>
-                                    <span>
-                                        <strong>Pajak hanya ditampilkan</strong>
-                                        <br>
-                                        <small class="text-gray-500">
-                                            Untuk customer yang tidak dikenakan pajak, tetapi nilai pajak tetap muncul di invoice.
-                                        </small>
-                                    </span>
-                                </label>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    Pajak tetap bisa ditampilkan di invoice, walaupun tidak ditambahkan ke total akhir.
+                                </p>
                             </div>
-                        </div>
 
-                        <div class="md:col-span-2 bg-gray-50 border rounded-lg p-4">
+                            <div class="mb-4">
+                                <label class="block mb-2 font-medium">Perhitungan Pajak</label>
+
+                                <div class="space-y-2">
+                                    <label class="flex items-start gap-2">
+                                        <input type="radio"
+                                            name="pajak_ditambahkan"
+                                            value="1"
+                                            class="mt-1"
+                                            {{ old('pajak_ditambahkan', '1') == '1' ? 'checked' : '' }}>
+
+                                        <span>
+                                            <strong>Pajak ditambahkan ke total</strong>
+                                            <br>
+                                            <small class="text-gray-500">
+                                                Untuk customer yang memang dikenakan pajak.
+                                            </small>
+                                        </span>
+                                    </label>
+
+                                    <label class="flex items-start gap-2">
+                                        <input type="radio"
+                                            name="pajak_ditambahkan"
+                                            value="0"
+                                            class="mt-1"
+                                            {{ old('pajak_ditambahkan') == '0' ? 'checked' : '' }}>
+
+                                        <span>
+                                            <strong>Pajak hanya ditampilkan</strong>
+                                            <br>
+                                            <small class="text-gray-500">
+                                                Untuk customer yang pajaknya hanya ingin dicatat/ditampilkan, tetapi tidak menambah total.
+                                            </small>
+                                        </span>
+                                    </label>
+                                </div>
+                            </div>
+
                             <div class="flex justify-between mb-2">
                                 <span>Subtotal Penjualan</span>
                                 <strong id="totalSubtotal">Rp 0</strong>
@@ -352,13 +354,15 @@
             <form id="formQuickCustomer" class="p-6">
                 @csrf
 
-                <div id="quickCustomerError"
-                    class="hidden mb-4 p-4 bg-red-100 text-red-700 rounded-md">
+                <div id="quickCustomerMessage"
+                    class="hidden mb-4 p-4 rounded-md">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
-                        <label class="block mb-1 font-medium">Nama Customer <span class="text-red-600">*</span></label>
+                        <label class="block mb-1 font-medium">
+                            Nama Customer <span class="text-red-600">*</span>
+                        </label>
                         <input type="text"
                             name="nama_customer"
                             id="quickNamaCustomer"
@@ -366,20 +370,21 @@
                             required>
                     </div>
 
-                    <div>
-                        <label class="block mb-1 font-medium">Nomor Handphone <span class="text-red-600">*</span></label>
+                    <div class="md:col-span-2">
+                        <label class="block mb-1 font-medium">
+                            Nomor Handphone <span class="text-red-600">*</span>
+                        </label>
                         <input type="text"
                             name="nomor_telepon"
                             id="quickNomorTelepon"
                             class="w-full border-gray-300 rounded-md shadow-sm"
-                            placeholder="Contoh: 08123456789"
                             required>
                         <p class="text-sm text-gray-500 mt-1">
                             Jika nama atau nomor handphone sudah tersedia, customer lama akan langsung dipilih.
                         </p>
                     </div>
 
-                    <div>
+                    <div class="md:col-span-2">
                         <label class="block mb-1 font-medium">Kategori Customer</label>
                         <input type="text"
                             name="kategori_customer"
@@ -392,7 +397,7 @@
                         <label class="block mb-1 font-medium">Alamat</label>
                         <textarea name="alamat"
                             id="quickAlamatCustomer"
-                            rows="3"
+                            rows="2"
                             class="w-full border-gray-300 rounded-md shadow-sm"></textarea>
                     </div>
 
@@ -400,7 +405,7 @@
                         <label class="block mb-1 font-medium">Catatan</label>
                         <textarea name="catatan"
                             id="quickCatatanCustomer"
-                            rows="3"
+                            rows="2"
                             class="w-full border-gray-300 rounded-md shadow-sm"></textarea>
                     </div>
                 </div>
@@ -449,129 +454,8 @@
             });
         }
 
-        function bukaModalCustomer() {
-            const modal = document.getElementById('modalCustomer');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-
-            setTimeout(function() {
-                document.getElementById('quickNamaCustomer').focus();
-            }, 100);
-        }
-
-        function tutupModalCustomer() {
-            const modal = document.getElementById('modalCustomer');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-
-            document.getElementById('formQuickCustomer').reset();
-            document.getElementById('quickCustomerError').classList.add('hidden');
-            document.getElementById('quickCustomerError').innerHTML = '';
-        }
-
-        function tambahCustomerKeSelect(customer) {
-            const customerSelect = document.getElementById('customerSelect');
-
-            if (!customerSelect || !customer) {
-                return;
-            }
-
-            const customerId = String(customer.id_customer);
-            let optionText = customer.kode_customer + ' - ' + customer.nama_customer;
-
-            if (customer.nomor_telepon) {
-                optionText += ' | ' + customer.nomor_telepon;
-            }
-
-            const existingOption = customerSelect.querySelector('option[value="' + customerId + '"]');
-
-            if (!existingOption) {
-                customerSelect.add(new Option(optionText, customerId));
-            } else {
-                existingOption.textContent = optionText;
-            }
-
-            if (customerSelect.tomselect) {
-                customerSelect.tomselect.addOption({
-                    value: customerId,
-                    text: optionText
-                });
-
-                customerSelect.tomselect.updateOption(customerId, {
-                    value: customerId,
-                    text: optionText
-                });
-
-                customerSelect.tomselect.setValue(customerId, true);
-                customerSelect.tomselect.refreshOptions(false);
-                customerSelect.tomselect.sync();
-            } else {
-                customerSelect.value = customerId;
-            }
-        }
-
-        async function simpanQuickCustomer(event) {
-            event.preventDefault();
-
-            const form = document.getElementById('formQuickCustomer');
-            const button = document.getElementById('btnSimpanQuickCustomer');
-            const errorBox = document.getElementById('quickCustomerError');
-
-            button.disabled = true;
-            button.innerText = 'Menyimpan...';
-
-            errorBox.classList.add('hidden');
-            errorBox.innerHTML = '';
-
-            const formData = new FormData(form);
-
-            try {
-                const response = await fetch("{{ route('customers.quickStore') }}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
-                        'Accept': 'application/json',
-                    },
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    let errorMessage = 'Gagal menambahkan customer.';
-
-                    if (result.errors) {
-                        errorMessage = Object.values(result.errors)
-                            .flat()
-                            .join('<br>');
-                    } else if (result.message) {
-                        errorMessage = result.message;
-                    }
-
-                    errorBox.innerHTML = errorMessage;
-                    errorBox.classList.remove('hidden');
-                    return;
-                }
-
-                tambahCustomerKeSelect(result.customer);
-                tutupModalCustomer();
-
-                alert(result.message || 'Customer berhasil dipilih.');
-            } catch (error) {
-                errorBox.innerHTML = 'Terjadi kesalahan koneksi. Silakan coba lagi.';
-                errorBox.classList.remove('hidden');
-            } finally {
-                button.disabled = false;
-                button.innerText = 'Simpan Customer';
-            }
-        }
-
         function initBarangSelect(selectElement) {
-            if (!selectElement) {
-                return;
-            }
-
-            if (selectElement.tomselect) {
+            if (!selectElement || selectElement.tomselect) {
                 return;
             }
 
@@ -595,7 +479,7 @@
             });
         }
 
-        function getSelectedOptionFromTomSelect(selectElement) {
+        function getSelectedOption(selectElement) {
             if (!selectElement) {
                 return null;
             }
@@ -609,26 +493,13 @@
             return selectElement.querySelector('option[value="' + selectedValue + '"]');
         }
 
-        function updateMetodePembayaran() {
-            const metode = document.getElementById('metodePembayaran').value;
-            const fieldJatuhTempo = document.getElementById('fieldJatuhTempo');
-
-            if (metode === 'kredit') {
-                fieldJatuhTempo.style.display = 'block';
-                fieldJatuhTempo.querySelector('input').setAttribute('required', 'required');
-            } else {
-                fieldJatuhTempo.style.display = 'none';
-                fieldJatuhTempo.querySelector('input').removeAttribute('required');
-            }
-        }
-
         function updateBarangInfo(row) {
             if (!row) {
                 return;
             }
 
             const select = row.querySelector('.barang-select');
-            const selectedOption = getSelectedOptionFromTomSelect(select);
+            const selectedOption = getSelectedOption(select);
 
             const harga = selectedOption ? selectedOption.getAttribute('data-harga') : 0;
             const stok = selectedOption ? selectedOption.getAttribute('data-stok') : '-';
@@ -662,6 +533,144 @@
             document.getElementById('totalSubtotal').innerText = formatRupiah(totalSubtotal);
             document.getElementById('totalPajak').innerText = formatRupiah(nilaiPajak);
             document.getElementById('totalAkhir').innerText = formatRupiah(totalAkhir);
+        }
+
+        function updateMetodePembayaran() {
+            const metode = document.getElementById('metodePembayaran').value;
+            const fieldJatuhTempo = document.getElementById('fieldJatuhTempo');
+
+            if (metode === 'kredit') {
+                fieldJatuhTempo.style.display = 'block';
+                fieldJatuhTempo.querySelector('input').setAttribute('required', 'required');
+            } else {
+                fieldJatuhTempo.style.display = 'none';
+                fieldJatuhTempo.querySelector('input').removeAttribute('required');
+            }
+        }
+
+        function bukaModalCustomer() {
+            const modal = document.getElementById('modalCustomer');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            document.getElementById('quickCustomerMessage').classList.add('hidden');
+            document.getElementById('quickNamaCustomer').focus();
+        }
+
+        function tutupModalCustomer() {
+            const modal = document.getElementById('modalCustomer');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+
+            document.getElementById('formQuickCustomer').reset();
+            document.getElementById('quickCustomerMessage').classList.add('hidden');
+        }
+
+        function tampilkanPesanCustomer(type, message) {
+            const box = document.getElementById('quickCustomerMessage');
+
+            box.classList.remove(
+                'hidden',
+                'bg-red-100',
+                'text-red-700',
+                'bg-green-100',
+                'text-green-700',
+                'bg-yellow-100',
+                'text-yellow-700'
+            );
+
+            if (type === 'error') {
+                box.classList.add('bg-red-100', 'text-red-700');
+            } else if (type === 'exists') {
+                box.classList.add('bg-yellow-100', 'text-yellow-700');
+            } else {
+                box.classList.add('bg-green-100', 'text-green-700');
+            }
+
+            box.innerText = message;
+        }
+
+        function pilihCustomer(customer) {
+            const customerSelect = document.getElementById('customerSelect');
+
+            const text = customer.kode_customer + ' - ' + customer.nama_customer +
+                (customer.nomor_telepon ? ' | ' + customer.nomor_telepon : '');
+
+            let option = customerSelect.querySelector('option[value="' + customer.id_customer + '"]');
+
+            if (!option) {
+                option = new Option(text, customer.id_customer, true, true);
+                customerSelect.add(option);
+            } else {
+                option.text = text;
+            }
+
+            if (customerSelect.tomselect) {
+                customerSelect.tomselect.addOption({
+                    value: String(customer.id_customer),
+                    text: text
+                });
+
+                customerSelect.tomselect.addItem(String(customer.id_customer), true);
+                customerSelect.tomselect.setValue(String(customer.id_customer), true);
+                customerSelect.tomselect.refreshOptions(false);
+            } else {
+                customerSelect.value = customer.id_customer;
+            }
+        }
+
+        async function simpanQuickCustomer(e) {
+            e.preventDefault();
+
+            const btn = document.getElementById('btnSimpanQuickCustomer');
+            const form = document.getElementById('formQuickCustomer');
+            const formData = new FormData(form);
+
+            btn.disabled = true;
+            btn.innerText = 'Menyimpan...';
+
+            try {
+                const response = await fetch("{{ route('customers.quickStore') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    let pesan = 'Customer gagal disimpan.';
+
+                    if (data.errors) {
+                        pesan = Object.values(data.errors).flat().join('\n');
+                    } else if (data.message) {
+                        pesan = data.message;
+                    }
+
+                    tampilkanPesanCustomer('error', pesan);
+                    return;
+                }
+
+                pilihCustomer(data.customer);
+
+                if (data.status === 'exists') {
+                    tampilkanPesanCustomer('exists', data.message || 'Customer sudah tersedia dan langsung dipilih.');
+                } else {
+                    tampilkanPesanCustomer('success', data.message || 'Customer baru berhasil ditambahkan dan langsung dipilih.');
+                }
+
+                setTimeout(function() {
+                    tutupModalCustomer();
+                }, 900);
+            } catch (error) {
+                tampilkanPesanCustomer('error', 'Terjadi kesalahan. Silakan coba lagi.');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Simpan Customer';
+            }
         }
 
         document.addEventListener('input', function(e) {
@@ -727,7 +736,7 @@
 
             document.querySelectorAll('#tableBarang tbody tr').forEach(function(row) {
                 const select = row.querySelector('.barang-select');
-                const selectedOption = getSelectedOptionFromTomSelect(select);
+                const selectedOption = getSelectedOption(select);
 
                 if (!select.value) {
                     valid = false;
@@ -753,6 +762,8 @@
         document.addEventListener('DOMContentLoaded', function() {
             initCustomerSelect();
             initAllBarangSelect();
+            updateMetodePembayaran();
+            hitungTotal();
 
             document.getElementById('btnBukaModalCustomer').addEventListener('click', bukaModalCustomer);
             document.getElementById('btnTutupModalCustomer').addEventListener('click', tutupModalCustomer);
@@ -764,9 +775,6 @@
                     tutupModalCustomer();
                 }
             });
-
-            updateMetodePembayaran();
-            hitungTotal();
         });
     </script>
 </x-app-layout>

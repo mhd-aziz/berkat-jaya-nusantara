@@ -111,7 +111,7 @@ class CustomerController extends Controller
         $nomorTeleponNormal = $this->normalisasiNomorTelepon($nomorTelepon);
 
         /*
-         * Cek customer lama agar konsisten dengan quick add supplier:
+         * Cek customer lama:
          * - Jika nama sama, customer dianggap sudah tersedia.
          * - Jika nomor HP sama, customer dianggap sudah tersedia.
          */

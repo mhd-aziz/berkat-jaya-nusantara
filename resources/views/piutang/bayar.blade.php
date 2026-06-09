@@ -1,4 +1,13 @@
 <x-app-layout>
+    @php
+    $backUrl = $backUrl ?? request('back_url', route('piutang.index'));
+
+    $detailUrl = route('piutang.show', [
+    'piutang' => $piutang->id_piutang,
+    'back_url' => $backUrl,
+    ]);
+    @endphp
+
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             Pembayaran Piutang
@@ -33,17 +42,31 @@
                             <td class="py-1">: {{ $piutang->customer->nama_customer ?? '-' }}</td>
                         </tr>
                         <tr>
+                            <td class="py-1 font-medium">Nomor Telepon</td>
+                            <td class="py-1">: {{ $piutang->customer->nomor_telepon ?? '-' }}</td>
+                        </tr>
+                        <tr>
                             <td class="py-1 font-medium">Total Piutang</td>
-                            <td class="py-1">: Rp {{ number_format($piutang->total_piutang, 0, ',', '.') }}</td>
+                            <td class="py-1">
+                                : Rp {{ number_format($piutang->total_piutang, 0, ',', '.') }}
+                            </td>
                         </tr>
                         <tr>
                             <td class="py-1 font-medium">Total Dibayar</td>
-                            <td class="py-1">: Rp {{ number_format($piutang->total_dibayar, 0, ',', '.') }}</td>
+                            <td class="py-1">
+                                : Rp {{ number_format($piutang->total_dibayar, 0, ',', '.') }}
+                            </td>
                         </tr>
                         <tr>
                             <td class="py-1 font-medium">Sisa Piutang</td>
-                            <td class="py-1 font-semibold">
+                            <td class="py-1 font-semibold text-red-700">
                                 : Rp {{ number_format($piutang->sisa_piutang, 0, ',', '.') }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="py-1 font-medium">Jatuh Tempo</td>
+                            <td class="py-1">
+                                : {{ $piutang->tanggal_jatuh_tempo ? $piutang->tanggal_jatuh_tempo->format('d-m-Y') : '-' }}
                             </td>
                         </tr>
                     </table>
@@ -51,6 +74,8 @@
 
                 <form action="{{ route('piutang.simpanPembayaran', $piutang->id_piutang) }}" method="POST">
                     @csrf
+
+                    <input type="hidden" name="back_url" value="{{ $backUrl }}">
 
                     <div class="mb-4">
                         <label class="block mb-1 font-medium">Tanggal Pembayaran</label>
@@ -73,7 +98,8 @@
                             required>
 
                         <p class="text-sm text-gray-500 mt-1">
-                            Maksimal pembayaran: Rp {{ number_format($piutang->sisa_piutang, 0, ',', '.') }}
+                            Maksimal pembayaran:
+                            Rp {{ number_format($piutang->sisa_piutang, 0, ',', '.') }}
                         </p>
                     </div>
 
@@ -105,7 +131,7 @@
                     </div>
 
                     <div class="flex justify-end gap-2">
-                        <a href="{{ route('piutang.show', $piutang->id_piutang) }}"
+                        <a href="{{ $detailUrl }}"
                             class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
                             Batal
                         </a>

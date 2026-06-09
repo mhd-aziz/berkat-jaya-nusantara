@@ -7,6 +7,7 @@
     - false = pajak hanya ditampilkan, tidak ditambahkan ke total akhir.
     */
     $pajakDitambahkan = $penjualan->pajak_ditambahkan ?? true;
+    $backUrl = request('back_url', route('penjualan.index'));
     @endphp
 
     <style>
@@ -162,10 +163,17 @@
                 Detail Invoice Penjualan
             </h2>
 
-            <button onclick="window.print()"
-                class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900">
-                Cetak Invoice
-            </button>
+            <div class="flex gap-2">
+                <a href="{{ route('penjualan.exportExcel', $penjualan->id_penjualan) }}"
+                    class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                    Export Excel
+                </a>
+
+                <button onclick="window.print()"
+                    class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900">
+                    Cetak Invoice
+                </button>
+            </div>
         </div>
     </x-slot>
 
@@ -379,7 +387,7 @@
                             </div>
                             @endif
 
-                            <div class="flex justify-between border-t pt-2 text-lg summary-row summary-total">
+                            <div class="flex justify-between border-t pt-2 text-lg summary-total">
                                 <span>Total Akhir</span>
                                 <strong>
                                     Rp {{ number_format($penjualan->total_akhir, 0, ',', '.') }}
@@ -394,7 +402,7 @@
                 </div>
 
                 <div class="flex justify-end mt-6 no-print">
-                    <a href="{{ route('penjualan.index') }}"
+                    <a href="{{ $backUrl }}"
                         class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
                         Kembali
                     </a>

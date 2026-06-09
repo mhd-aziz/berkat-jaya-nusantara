@@ -43,17 +43,22 @@ class PiutangController extends Controller
         return view('piutang.show', compact('piutang'));
     }
 
-    public function bayar(Piutang $piutang)
+    public function bayar(Request $request, Piutang $piutang)
     {
         $piutang->load(['customer', 'penjualan']);
 
+        $backUrl = $request->query('back_url', route('piutang.index'));
+
         if ($piutang->status_piutang === 'lunas') {
             return redirect()
-                ->route('piutang.show', $piutang->id_piutang)
+                ->route('piutang.show', [
+                    'piutang' => $piutang->id_piutang,
+                    'back_url' => $backUrl,
+                ])
                 ->with('error', 'Piutang ini sudah lunas.');
         }
 
-        return view('piutang.bayar', compact('piutang'));
+        return view('piutang.bayar', compact('piutang', 'backUrl'));
     }
 
     public function simpanPembayaran(Request $request, Piutang $piutang)
@@ -63,7 +68,10 @@ class PiutangController extends Controller
             'nominal_pembayaran' => 'required|numeric|min:1|max:' . $piutang->sisa_piutang,
             'metode_pembayaran' => 'required|in:tunai,transfer,giro,lainnya',
             'catatan' => 'nullable|string',
+            'back_url' => 'nullable|string',
         ]);
+
+        $backUrl = $request->input('back_url', route('piutang.index'));
 
         DB::transaction(function () use ($request, $piutang) {
             PembayaranPiutang::create([
@@ -100,7 +108,10 @@ class PiutangController extends Controller
         });
 
         return redirect()
-            ->route('piutang.show', $piutang->id_piutang)
+            ->route('piutang.show', [
+                'piutang' => $piutang->id_piutang,
+                'back_url' => $backUrl,
+            ])
             ->with('success', 'Pembayaran piutang berhasil disimpan.');
     }
 }

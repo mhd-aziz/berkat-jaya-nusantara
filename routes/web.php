@@ -9,6 +9,7 @@ use App\Http\Controllers\PiutangController;
 use App\Http\Controllers\RiwayatStokController;
 use App\Http\Controllers\InvoiceHistorisController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,11 +52,13 @@ Route::middleware('auth')->group(function () {
     Route::get('/pembelian', [PembelianController::class, 'index'])->name('pembelian.index');
     Route::get('/pembelian/create', [PembelianController::class, 'create'])->name('pembelian.create');
     Route::post('/pembelian', [PembelianController::class, 'store'])->name('pembelian.store');
+    Route::get('/pembelian/{pembelian}/export-excel', [PembelianController::class, 'exportExcel'])->name('pembelian.exportExcel');
     Route::get('/pembelian/{pembelian}', [PembelianController::class, 'show'])->name('pembelian.show');
 
     Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan.index');
     Route::get('/penjualan/create', [PenjualanController::class, 'create'])->name('penjualan.create');
     Route::post('/penjualan', [PenjualanController::class, 'store'])->name('penjualan.store');
+    Route::get('/penjualan/{penjualan}/export-excel', [PenjualanController::class, 'exportExcel'])->name('penjualan.exportExcel');
     Route::get('/penjualan/{penjualan}', [PenjualanController::class, 'show'])->name('penjualan.show');
 
     Route::get('/piutang', [PiutangController::class, 'index'])->name('piutang.index');
@@ -70,6 +73,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/invoice-historis/pembelian', [InvoiceHistorisController::class, 'storePembelian'])->name('invoice-historis.pembelian.store');
     Route::get('/invoice-historis/penjualan/create', [InvoiceHistorisController::class, 'createPenjualan'])->name('invoice-historis.penjualan.create');
     Route::post('/invoice-historis/penjualan', [InvoiceHistorisController::class, 'storePenjualan'])->name('invoice-historis.penjualan.store');
+
+    Route::prefix('laporan')->name('laporan.')->group(function () {
+        Route::get('/penjualan', [LaporanController::class, 'penjualan'])->name('penjualan');
+        Route::get('/penjualan/export-excel', [LaporanController::class, 'penjualanExportExcel'])->name('penjualan.exportExcel');
+        Route::get('/penjualan/export-pdf', [LaporanController::class, 'penjualanExportPdf'])->name('penjualan.exportPdf');
+
+        Route::get('/pembelian', [LaporanController::class, 'pembelian'])->name('pembelian');
+        Route::get('/pembelian/export-excel', [LaporanController::class, 'pembelianExportExcel'])->name('pembelian.exportExcel');
+        Route::get('/pembelian/export-pdf', [LaporanController::class, 'pembelianExportPdf'])->name('pembelian.exportPdf');
+
+        Route::get('/piutang', [LaporanController::class, 'piutang'])->name('piutang');
+        Route::get('/piutang/export-excel', [LaporanController::class, 'piutangExportExcel'])->name('piutang.exportExcel');
+        Route::get('/piutang/export-pdf', [LaporanController::class, 'piutangExportPdf'])->name('piutang.exportPdf');
+
+        Route::get('/stok-barang', [LaporanController::class, 'stokBarang'])->name('stokBarang');
+        Route::get('/stok-barang/export-excel', [LaporanController::class, 'stokBarangExportExcel'])->name('stokBarang.exportExcel');
+        Route::get('/stok-barang/export-pdf', [LaporanController::class, 'stokBarangExportPdf'])->name('stokBarang.exportPdf');
+    });
 });
 
 require __DIR__ . '/auth.php';
