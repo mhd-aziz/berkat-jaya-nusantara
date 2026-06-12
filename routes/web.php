@@ -53,7 +53,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/pembelian', [PembelianController::class, 'index'])->name('pembelian.index');
     Route::get('/pembelian/create', [PembelianController::class, 'create'])->name('pembelian.create');
     Route::post('/pembelian', [PembelianController::class, 'store'])->name('pembelian.store');
+    Route::get('/pembelian/{pembelian}/edit', [PembelianController::class, 'edit'])->name('pembelian.edit');
+    Route::put('/pembelian/{pembelian}', [PembelianController::class, 'update'])->name('pembelian.update');
     Route::get('/pembelian/{pembelian}/export-excel', [PembelianController::class, 'exportExcel'])->name('pembelian.exportExcel');
+    Route::get('/pembelian/{pembelian}/delivery-order', [PembelianController::class, 'deliveryOrder'])->name('pembelian.deliveryOrder');
+    Route::get('/pembelian/{pembelian}/surat-jalan', [PembelianController::class, 'suratJalan'])->name('pembelian.suratJalan');
     Route::get('/pembelian/{pembelian}', [PembelianController::class, 'show'])->name('pembelian.show');
 
     Route::get('/penjualan', [PenjualanController::class, 'index'])->name('penjualan.index');
@@ -75,11 +79,21 @@ Route::middleware('auth')->group(function () {
     Route::post('/stock-opname', [StockOpnameController::class, 'store'])->name('stock-opname.store');
 
     Route::get('/invoice-historis', [InvoiceHistorisController::class, 'index'])->name('invoice-historis.index');
+
     Route::get('/invoice-historis/pembelian/create', [InvoiceHistorisController::class, 'createPembelian'])->name('invoice-historis.pembelian.create');
     Route::post('/invoice-historis/pembelian', [InvoiceHistorisController::class, 'storePembelian'])->name('invoice-historis.pembelian.store');
+    Route::get('/invoice-historis/pembelian/{pembelian}/edit', [InvoiceHistorisController::class, 'editPembelian'])->name('invoice-historis.pembelian.edit');
+    Route::put('/invoice-historis/pembelian/{pembelian}', [InvoiceHistorisController::class, 'updatePembelian'])->name('invoice-historis.pembelian.update');
+    Route::get('/invoice-historis/pembelian/{pembelian}/export-excel', [InvoiceHistorisController::class, 'exportPembelianExcel'])->name('invoice-historis.pembelian.exportExcel');
+    Route::get('/invoice-historis/pembelian/{pembelian}', [InvoiceHistorisController::class, 'showPembelian'])->name('invoice-historis.pembelian.show');
+
     Route::get('/invoice-historis/penjualan/create', [InvoiceHistorisController::class, 'createPenjualan'])->name('invoice-historis.penjualan.create');
     Route::post('/invoice-historis/penjualan', [InvoiceHistorisController::class, 'storePenjualan'])->name('invoice-historis.penjualan.store');
-
+    Route::get('/invoice-historis/penjualan/{penjualan}/edit', [InvoiceHistorisController::class, 'editPenjualan'])->name('invoice-historis.penjualan.edit');
+    Route::put('/invoice-historis/penjualan/{penjualan}', [InvoiceHistorisController::class, 'updatePenjualan'])->name('invoice-historis.penjualan.update');
+    Route::get('/invoice-historis/penjualan/{penjualan}/export-excel', [InvoiceHistorisController::class, 'exportPenjualanExcel'])->name('invoice-historis.penjualan.exportExcel');
+    Route::get('/invoice-historis/penjualan/{penjualan}', [InvoiceHistorisController::class, 'showPenjualan'])->name('invoice-historis.penjualan.show');
+    
     Route::prefix('laporan')->name('laporan.')->group(function () {
         Route::get('/penjualan', [LaporanController::class, 'penjualan'])->name('penjualan');
         Route::get('/penjualan/export-excel', [LaporanController::class, 'penjualanExportExcel'])->name('penjualan.exportExcel');

@@ -1,157 +1,360 @@
+@php
+$namaPerusahaan = 'CV. BERKAT JAYA NUSANTARA';
+$alamatPerusahaan = 'Alamat perusahaan belum diisi';
+$teleponPerusahaan = 'Telepon belum diisi';
+
+$periodeAwal = $tanggalAwal === 'awal' ? 'Awal' : $tanggalAwal;
+$periodeAkhir = $tanggalAkhir === 'akhir' ? 'Akhir' : $tanggalAkhir;
+
+$nettoPerubahan = $totalMasuk - $totalKeluar + $totalSelisihPlus - $totalSelisihMinus;
+@endphp
+
 <!DOCTYPE html>
 <html>
 
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <title>Laporan Riwayat Stok</title>
 
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 10px;
+            font-size: 8px;
             color: #111827;
         }
 
-        h2 {
-            margin: 0;
-            font-size: 18px;
+        .company {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .company-info {
+            text-align: center;
+            font-size: 8px;
+            color: #4b5563;
+            margin-bottom: 4px;
+        }
+
+        .title {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 3px;
         }
 
         .subtitle {
-            margin-top: 4px;
-            margin-bottom: 14px;
+            text-align: center;
+            font-size: 9px;
+            margin-bottom: 10px;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8px;
+        }
+
+        .summary-table td {
+            border: 1px solid #d1d5db;
+            padding: 4px;
+            vertical-align: top;
+        }
+
+        .summary-label {
+            font-size: 7.5px;
             color: #4b5563;
         }
 
-        .summary {
-            width: 100%;
-            margin-bottom: 14px;
-            border-collapse: collapse;
-        }
-
-        .summary td {
-            border: 1px solid #d1d5db;
-            padding: 6px;
-        }
-
-        .summary .label {
-            background: #f3f4f6;
+        .summary-value {
+            font-size: 9.5px;
             font-weight: bold;
+            margin-top: 2px;
         }
 
-        table.data {
+        .data-table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        table.data th {
-            background: #f3f4f6;
-            border: 1px solid #d1d5db;
-            padding: 5px;
-            text-align: left;
+        .data-table th {
+            border: 1px solid #9ca3af;
+            background-color: #e5e7eb;
+            padding: 4px 3px;
+            font-weight: bold;
+            text-align: center;
         }
 
-        table.data td {
+        .data-table td {
             border: 1px solid #d1d5db;
-            padding: 5px;
+            padding: 3px;
             vertical-align: top;
+        }
+
+        .text-center {
+            text-align: center;
         }
 
         .text-right {
             text-align: right;
         }
 
-        .text-center {
-            text-align: center;
+        .status-masuk {
+            color: #047857;
+            font-weight: bold;
+        }
+
+        .status-keluar {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .status-penyesuaian {
+            color: #92400e;
+            font-weight: bold;
+        }
+
+        .status-opname {
+            color: #1d4ed8;
+            font-weight: bold;
+        }
+
+        .selisih-plus {
+            color: #047857;
+            font-weight: bold;
+        }
+
+        .selisih-minus {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .selisih-netral {
+            color: #374151;
+            font-weight: bold;
+        }
+
+        .small-text {
+            font-size: 7px;
+            color: #4b5563;
+        }
+
+        .footer {
+            margin-top: 10px;
+            font-size: 8px;
+            color: #6b7280;
+            text-align: right;
         }
     </style>
 </head>
 
 <body>
-    <h2>Laporan Riwayat Stok</h2>
-    <div class="subtitle">
-        Periode: {{ $tanggalAwal }} s/d {{ $tanggalAkhir }}
+    <div class="company">
+        {{ $namaPerusahaan }}
     </div>
 
-    <table class="summary">
+    <div class="company-info">
+        {{ $alamatPerusahaan }} | Telp: {{ $teleponPerusahaan }}
+    </div>
+
+    <div class="title">
+        LAPORAN RIWAYAT STOK
+    </div>
+
+    <div class="subtitle">
+        Periode: {{ $periodeAwal }} s/d {{ $periodeAkhir }}
+        |
+        Dicetak: {{ now()->format('d-m-Y H:i') }}
+    </div>
+
+    <table class="summary-table">
         <tr>
-            <td class="label">Total Data</td>
-            <td>{{ number_format($totalData, 0, ',', '.') }}</td>
-            <td class="label">Total Barang Masuk</td>
-            <td>{{ number_format($totalMasuk, 0, ',', '.') }}</td>
-            <td class="label">Total Barang Keluar</td>
-            <td>{{ number_format($totalKeluar, 0, ',', '.') }}</td>
-        </tr>
-        <tr>
-            <td class="label">Jumlah Penyesuaian</td>
-            <td>{{ number_format($totalPenyesuaian, 0, ',', '.') }}</td>
-            <td class="label">Jumlah Stock Opname</td>
-            <td>{{ number_format($totalOpname, 0, ',', '.') }}</td>
-            <td class="label">Selisih + / -</td>
             <td>
-                +{{ number_format($totalSelisihPlus, 0, ',', '.') }}
-                /
-                -{{ number_format($totalSelisihMinus, 0, ',', '.') }}
+                <div class="summary-label">Total Data</div>
+                <div class="summary-value">
+                    {{ number_format($totalData, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td>
+                <div class="summary-label">Total Barang Masuk</div>
+                <div class="summary-value">
+                    +{{ number_format($totalMasuk, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td>
+                <div class="summary-label">Total Barang Keluar</div>
+                <div class="summary-value">
+                    -{{ number_format($totalKeluar, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td>
+                <div class="summary-label">Jumlah Penyesuaian</div>
+                <div class="summary-value">
+                    {{ number_format($totalPenyesuaian, 0, ',', '.') }}
+                </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <div class="summary-label">Stock Opname</div>
+                <div class="summary-value">
+                    {{ number_format($totalOpname, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td>
+                <div class="summary-label">Selisih Bertambah</div>
+                <div class="summary-value">
+                    +{{ number_format($totalSelisihPlus, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td>
+                <div class="summary-label">Selisih Berkurang</div>
+                <div class="summary-value">
+                    -{{ number_format($totalSelisihMinus, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td>
+                <div class="summary-label">Netto Perubahan</div>
+                <div class="summary-value">
+                    {{ $nettoPerubahan > 0 ? '+' : '' }}{{ number_format($nettoPerubahan, 0, ',', '.') }}
+                </div>
             </td>
         </tr>
     </table>
 
-    <table class="data">
+    <table class="data-table">
         <thead>
             <tr>
-                <th>No</th>
-                <th>Tanggal</th>
-                <th>Kode</th>
-                <th>Nama Barang</th>
-                <th>Jenis</th>
-                <th>Tipe</th>
-                <th class="text-right">Jumlah</th>
-                <th class="text-right">Sebelum</th>
-                <th class="text-right">Sesudah</th>
-                <th class="text-right">Selisih</th>
-                <th>Sumber</th>
-                <th>Keterangan</th>
+                <th style="width: 3%;">No</th>
+                <th style="width: 7%;">Tanggal</th>
+                <th style="width: 9%;">Kode</th>
+                <th style="width: 16%;">Barang</th>
+                <th style="width: 8%;">Jenis</th>
+                <th style="width: 7%;">Tipe</th>
+                <th style="width: 6%;">Jumlah</th>
+                <th style="width: 7%;">Sebelum</th>
+                <th style="width: 7%;">Sesudah</th>
+                <th style="width: 7%;">Selisih</th>
+                <th style="width: 12%;">Sumber</th>
+                <th style="width: 11%;">Keterangan</th>
             </tr>
         </thead>
 
         <tbody>
             @forelse ($riwayatStok as $item)
             @php
-            $selisih = (int) $item->stok_sesudah - (int) $item->stok_sebelum;
+            $stokSebelum = (int) ($item->stok_sebelum ?? 0);
+            $stokSesudah = (int) ($item->stok_sesudah ?? 0);
+            $selisih = $stokSesudah - $stokSebelum;
             $isOpname = str_starts_with((string) $item->sumber_transaksi, 'STOCK-OPNAME');
 
             if ($item->jenis_pergerakan === 'masuk') {
             $jenisLabel = 'Masuk';
+            $jenisClass = 'status-masuk';
             } elseif ($item->jenis_pergerakan === 'keluar') {
             $jenisLabel = 'Keluar';
+            $jenisClass = 'status-keluar';
             } else {
             $jenisLabel = 'Penyesuaian';
+            $jenisClass = 'status-penyesuaian';
             }
-            @endphp
 
-            <tr>
-                <td>{{ $loop->iteration }}</td>
-                <td>{{ $item->tanggal ? $item->tanggal->format('d-m-Y') : '-' }}</td>
-                <td>{{ $item->barang->kode_barang ?? '-' }}</td>
-                <td>{{ $item->barang->nama_barang ?? '-' }}</td>
-                <td>{{ $jenisLabel }}</td>
-                <td>{{ $isOpname ? 'Opname' : 'Transaksi' }}</td>
-                <td class="text-right">{{ number_format($item->jumlah, 0, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($item->stok_sebelum, 0, ',', '.') }}</td>
-                <td class="text-right">{{ number_format($item->stok_sesudah, 0, ',', '.') }}</td>
-                <td class="text-right">{{ $selisih > 0 ? '+' : '' }}{{ number_format($selisih, 0, ',', '.') }}</td>
-                <td>{{ $item->sumber_transaksi ?? '-' }}</td>
-                <td>{{ $item->keterangan ?? '-' }}</td>
-            </tr>
-            @empty
-            <tr>
-                <td colspan="12" class="text-center">
-                    Data laporan riwayat stok belum tersedia.
+            if ($selisih > 0) {
+            $selisihText = '+' . number_format($selisih, 0, ',', '.');
+            $selisihClass = 'selisih-plus';
+            } elseif ($selisih < 0) {
+                $selisihText=number_format($selisih, 0, ',' , '.' );
+                $selisihClass='selisih-minus' ;
+                } else {
+                $selisihText='0' ;
+                $selisihClass='selisih-netral' ;
+                }
+                @endphp
+
+                <tr>
+                <td class="text-center">
+                    {{ $loop->iteration }}
                 </td>
-            </tr>
-            @endforelse
+
+                <td class="text-center">
+                    {{ $item->tanggal ? $item->tanggal->format('d-m-Y') : '-' }}
+                </td>
+
+                <td>
+                    {{ $item->barang->kode_barang ?? '-' }}
+                </td>
+
+                <td>
+                    {{ $item->barang->nama_barang ?? '-' }}
+                    <br>
+                    <span class="small-text">
+                        Satuan: {{ strtoupper($item->barang->satuan ?? '-') }}
+                    </span>
+                </td>
+
+                <td class="text-center">
+                    <span class="{{ $jenisClass }}">
+                        {{ $jenisLabel }}
+                    </span>
+                </td>
+
+                <td class="text-center">
+                    @if ($isOpname)
+                    <span class="status-opname">
+                        Opname
+                    </span>
+                    @else
+                    Transaksi
+                    @endif
+                </td>
+
+                <td class="text-right">
+                    {{ number_format($item->jumlah, 0, ',', '.') }}
+                </td>
+
+                <td class="text-right">
+                    {{ number_format($stokSebelum, 0, ',', '.') }}
+                </td>
+
+                <td class="text-right">
+                    {{ number_format($stokSesudah, 0, ',', '.') }}
+                </td>
+
+                <td class="text-right">
+                    <span class="{{ $selisihClass }}">
+                        {{ $selisihText }}
+                    </span>
+                </td>
+
+                <td>
+                    {{ $item->sumber_transaksi ?? '-' }}
+                </td>
+
+                <td>
+                    {{ $item->keterangan ?? '-' }}
+                </td>
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="12" class="text-center">
+                        Data laporan riwayat stok belum tersedia.
+                    </td>
+                </tr>
+                @endforelse
         </tbody>
     </table>
+
+    <div class="footer">
+        Laporan ini dibuat otomatis oleh sistem Berkat Jaya Nusantara.
+    </div>
 </body>
 
 </html>

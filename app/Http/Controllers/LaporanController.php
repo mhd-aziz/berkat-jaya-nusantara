@@ -7,8 +7,8 @@ use App\Models\Customer;
 use App\Models\Pembelian;
 use App\Models\Penjualan;
 use App\Models\Piutang;
-use App\Models\Supplier;
 use App\Models\RiwayatStok;
+use App\Models\Supplier;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
@@ -19,11 +19,7 @@ class LaporanController extends Controller
         $query = $this->queryLaporanPenjualan($request);
 
         $penjualanUntukTotal = (clone $query)->get();
-
-        $totalTransaksi = $penjualanUntukTotal->count();
-        $totalSubtotal = $penjualanUntukTotal->sum('subtotal');
-        $totalPajak = $penjualanUntukTotal->sum('nilai_pajak');
-        $totalAkhir = $penjualanUntukTotal->sum('total_akhir');
+        $ringkasan = $this->hitungRingkasanPenjualan($penjualanUntukTotal);
 
         $penjualan = $query
             ->orderBy('tanggal_penjualan', 'desc')
@@ -35,14 +31,10 @@ class LaporanController extends Controller
             ->orderBy('nama_customer')
             ->get();
 
-        return view('laporan.penjualan', compact(
-            'penjualan',
-            'customers',
-            'totalTransaksi',
-            'totalSubtotal',
-            'totalPajak',
-            'totalAkhir'
-        ));
+        return view('laporan.penjualan', array_merge([
+            'penjualan' => $penjualan,
+            'customers' => $customers,
+        ], $ringkasan));
     }
 
     public function penjualanExportExcel(Request $request)
@@ -52,26 +44,19 @@ class LaporanController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $totalTransaksi = $penjualan->count();
-        $totalSubtotal = $penjualan->sum('subtotal');
-        $totalPajak = $penjualan->sum('nilai_pajak');
-        $totalAkhir = $penjualan->sum('total_akhir');
+        $ringkasan = $this->hitungRingkasanPenjualan($penjualan);
 
         $tanggalAwal = $request->tanggal_awal ?: 'awal';
         $tanggalAkhir = $request->tanggal_akhir ?: 'akhir';
 
-        $fileName = 'Laporan-Penjualan-' . $tanggalAwal . '-sd-' . $tanggalAkhir . '.xls';
+        $fileName = $this->namaFileLaporan('Laporan-Penjualan', $tanggalAwal, $tanggalAkhir, 'xls');
 
         return response()
-            ->view('laporan.penjualan-excel', compact(
-                'penjualan',
-                'totalTransaksi',
-                'totalSubtotal',
-                'totalPajak',
-                'totalAkhir',
-                'tanggalAwal',
-                'tanggalAkhir'
-            ))
+            ->view('laporan.penjualan-excel', array_merge([
+                'penjualan' => $penjualan,
+                'tanggalAwal' => $tanggalAwal,
+                'tanggalAkhir' => $tanggalAkhir,
+            ], $ringkasan))
             ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
             ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"')
             ->header('Cache-Control', 'max-age=0');
@@ -84,25 +69,18 @@ class LaporanController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $totalTransaksi = $penjualan->count();
-        $totalSubtotal = $penjualan->sum('subtotal');
-        $totalPajak = $penjualan->sum('nilai_pajak');
-        $totalAkhir = $penjualan->sum('total_akhir');
+        $ringkasan = $this->hitungRingkasanPenjualan($penjualan);
 
         $tanggalAwal = $request->tanggal_awal ?: 'awal';
         $tanggalAkhir = $request->tanggal_akhir ?: 'akhir';
 
-        $fileName = 'Laporan-Penjualan-' . $tanggalAwal . '-sd-' . $tanggalAkhir . '.pdf';
+        $fileName = $this->namaFileLaporan('Laporan-Penjualan', $tanggalAwal, $tanggalAkhir, 'pdf');
 
-        $pdf = Pdf::loadView('laporan.penjualan-pdf', [
+        $pdf = Pdf::loadView('laporan.penjualan-pdf', array_merge([
             'penjualan' => $penjualan,
-            'totalTransaksi' => $totalTransaksi,
-            'totalSubtotal' => $totalSubtotal,
-            'totalPajak' => $totalPajak,
-            'totalAkhir' => $totalAkhir,
             'tanggalAwal' => $tanggalAwal,
             'tanggalAkhir' => $tanggalAkhir,
-        ])->setPaper('a4', 'landscape');
+        ], $ringkasan))->setPaper('a4', 'landscape');
 
         return $pdf->download($fileName);
     }
@@ -112,26 +90,7 @@ class LaporanController extends Controller
         $query = $this->queryLaporanPembelian($request);
 
         $pembelianUntukTotal = (clone $query)->get();
-
-        $totalTransaksi = $pembelianUntukTotal->count();
-        $totalSubtotal = $pembelianUntukTotal->sum('subtotal');
-        $totalPajak = $pembelianUntukTotal->sum('nilai_pajak');
-        $totalAkhir = $pembelianUntukTotal->sum('total_akhir');
-
-        $totalDipesan = 0;
-        $totalDiterima = 0;
-
-        foreach ($pembelianUntukTotal as $item) {
-            foreach ($item->detailPembelian as $detail) {
-                $jumlahDipesan = $detail->jumlah_dipesan ?? $detail->jumlah;
-                $jumlahDiterima = $detail->jumlah;
-
-                $totalDipesan += $jumlahDipesan;
-                $totalDiterima += $jumlahDiterima;
-            }
-        }
-
-        $totalSisa = max($totalDipesan - $totalDiterima, 0);
+        $ringkasan = $this->hitungRingkasanPembelian($pembelianUntukTotal);
 
         $pembelian = $query
             ->orderBy('tanggal_pembelian', 'desc')
@@ -143,17 +102,10 @@ class LaporanController extends Controller
             ->orderBy('nama_supplier')
             ->get();
 
-        return view('laporan.pembelian', compact(
-            'pembelian',
-            'suppliers',
-            'totalTransaksi',
-            'totalSubtotal',
-            'totalPajak',
-            'totalAkhir',
-            'totalDipesan',
-            'totalDiterima',
-            'totalSisa'
-        ));
+        return view('laporan.pembelian', array_merge([
+            'pembelian' => $pembelian,
+            'suppliers' => $suppliers,
+        ], $ringkasan));
     }
 
     public function pembelianExportExcel(Request $request)
@@ -163,44 +115,19 @@ class LaporanController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $totalTransaksi = $pembelian->count();
-        $totalSubtotal = $pembelian->sum('subtotal');
-        $totalPajak = $pembelian->sum('nilai_pajak');
-        $totalAkhir = $pembelian->sum('total_akhir');
-
-        $totalDipesan = 0;
-        $totalDiterima = 0;
-
-        foreach ($pembelian as $item) {
-            foreach ($item->detailPembelian as $detail) {
-                $jumlahDipesan = $detail->jumlah_dipesan ?? $detail->jumlah;
-                $jumlahDiterima = $detail->jumlah;
-
-                $totalDipesan += $jumlahDipesan;
-                $totalDiterima += $jumlahDiterima;
-            }
-        }
-
-        $totalSisa = max($totalDipesan - $totalDiterima, 0);
+        $ringkasan = $this->hitungRingkasanPembelian($pembelian);
 
         $tanggalAwal = $request->tanggal_awal ?: 'awal';
         $tanggalAkhir = $request->tanggal_akhir ?: 'akhir';
 
-        $fileName = 'Laporan-Pembelian-' . $tanggalAwal . '-sd-' . $tanggalAkhir . '.xls';
+        $fileName = $this->namaFileLaporan('Laporan-Pembelian', $tanggalAwal, $tanggalAkhir, 'xls');
 
         return response()
-            ->view('laporan.pembelian-excel', compact(
-                'pembelian',
-                'totalTransaksi',
-                'totalSubtotal',
-                'totalPajak',
-                'totalAkhir',
-                'totalDipesan',
-                'totalDiterima',
-                'totalSisa',
-                'tanggalAwal',
-                'tanggalAkhir'
-            ))
+            ->view('laporan.pembelian-excel', array_merge([
+                'pembelian' => $pembelian,
+                'tanggalAwal' => $tanggalAwal,
+                'tanggalAkhir' => $tanggalAkhir,
+            ], $ringkasan))
             ->header('Content-Type', 'application/vnd.ms-excel; charset=UTF-8')
             ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"')
             ->header('Cache-Control', 'max-age=0');
@@ -213,43 +140,18 @@ class LaporanController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $totalTransaksi = $pembelian->count();
-        $totalSubtotal = $pembelian->sum('subtotal');
-        $totalPajak = $pembelian->sum('nilai_pajak');
-        $totalAkhir = $pembelian->sum('total_akhir');
-
-        $totalDipesan = 0;
-        $totalDiterima = 0;
-
-        foreach ($pembelian as $item) {
-            foreach ($item->detailPembelian as $detail) {
-                $jumlahDipesan = $detail->jumlah_dipesan ?? $detail->jumlah;
-                $jumlahDiterima = $detail->jumlah;
-
-                $totalDipesan += $jumlahDipesan;
-                $totalDiterima += $jumlahDiterima;
-            }
-        }
-
-        $totalSisa = max($totalDipesan - $totalDiterima, 0);
+        $ringkasan = $this->hitungRingkasanPembelian($pembelian);
 
         $tanggalAwal = $request->tanggal_awal ?: 'awal';
         $tanggalAkhir = $request->tanggal_akhir ?: 'akhir';
 
-        $fileName = 'Laporan-Pembelian-' . $tanggalAwal . '-sd-' . $tanggalAkhir . '.pdf';
+        $fileName = $this->namaFileLaporan('Laporan-Pembelian', $tanggalAwal, $tanggalAkhir, 'pdf');
 
-        $pdf = Pdf::loadView('laporan.pembelian-pdf', [
+        $pdf = Pdf::loadView('laporan.pembelian-pdf', array_merge([
             'pembelian' => $pembelian,
-            'totalTransaksi' => $totalTransaksi,
-            'totalSubtotal' => $totalSubtotal,
-            'totalPajak' => $totalPajak,
-            'totalAkhir' => $totalAkhir,
-            'totalDipesan' => $totalDipesan,
-            'totalDiterima' => $totalDiterima,
-            'totalSisa' => $totalSisa,
             'tanggalAwal' => $tanggalAwal,
             'tanggalAkhir' => $tanggalAkhir,
-        ])->setPaper('a4', 'landscape');
+        ], $ringkasan))->setPaper('a4', 'landscape');
 
         return $pdf->download($fileName);
     }
@@ -285,6 +187,18 @@ class LaporanController extends Controller
             })
             ->count();
 
+        $totalHistoris = $piutangUntukTotal
+            ->filter(function ($item) {
+                return (bool) ($item->penjualan->is_historical ?? false);
+            })
+            ->count();
+
+        $totalSistemBerjalan = $piutangUntukTotal
+            ->filter(function ($item) {
+                return !(bool) ($item->penjualan->is_historical ?? false);
+            })
+            ->count();
+
         $piutang = $query
             ->orderBy('tanggal_jatuh_tempo', 'asc')
             ->orderBy('created_at', 'desc')
@@ -305,7 +219,9 @@ class LaporanController extends Controller
             'totalBelumLunas',
             'totalSebagian',
             'totalLunas',
-            'totalLewatJatuhTempo'
+            'totalLewatJatuhTempo',
+            'totalHistoris',
+            'totalSistemBerjalan'
         ));
     }
 
@@ -341,10 +257,22 @@ class LaporanController extends Controller
             })
             ->count();
 
+        $totalHistoris = $piutang
+            ->filter(function ($item) {
+                return (bool) ($item->penjualan->is_historical ?? false);
+            })
+            ->count();
+
+        $totalSistemBerjalan = $piutang
+            ->filter(function ($item) {
+                return !(bool) ($item->penjualan->is_historical ?? false);
+            })
+            ->count();
+
         $tanggalAwal = $request->tanggal_awal ?: 'awal';
         $tanggalAkhir = $request->tanggal_akhir ?: 'akhir';
 
-        $fileName = 'Laporan-Piutang-' . $tanggalAwal . '-sd-' . $tanggalAkhir . '.xls';
+        $fileName = $this->namaFileLaporan('Laporan-Piutang', $tanggalAwal, $tanggalAkhir, 'xls');
 
         return response()
             ->view('laporan.piutang-excel', compact(
@@ -357,6 +285,8 @@ class LaporanController extends Controller
                 'totalSebagian',
                 'totalLunas',
                 'totalLewatJatuhTempo',
+                'totalHistoris',
+                'totalSistemBerjalan',
                 'tanggalAwal',
                 'tanggalAkhir'
             ))
@@ -397,24 +327,38 @@ class LaporanController extends Controller
             })
             ->count();
 
+        $totalHistoris = $piutang
+            ->filter(function ($item) {
+                return (bool) ($item->penjualan->is_historical ?? false);
+            })
+            ->count();
+
+        $totalSistemBerjalan = $piutang
+            ->filter(function ($item) {
+                return !(bool) ($item->penjualan->is_historical ?? false);
+            })
+            ->count();
+
         $tanggalAwal = $request->tanggal_awal ?: 'awal';
         $tanggalAkhir = $request->tanggal_akhir ?: 'akhir';
 
-        $fileName = 'Laporan-Piutang-' . $tanggalAwal . '-sd-' . $tanggalAkhir . '.pdf';
+        $fileName = $this->namaFileLaporan('Laporan-Piutang', $tanggalAwal, $tanggalAkhir, 'pdf');
 
-        $pdf = Pdf::loadView('laporan.piutang-pdf', [
-            'piutang' => $piutang,
-            'totalData' => $totalData,
-            'totalPiutang' => $totalPiutang,
-            'totalDibayar' => $totalDibayar,
-            'totalSisa' => $totalSisa,
-            'totalBelumLunas' => $totalBelumLunas,
-            'totalSebagian' => $totalSebagian,
-            'totalLunas' => $totalLunas,
-            'totalLewatJatuhTempo' => $totalLewatJatuhTempo,
-            'tanggalAwal' => $tanggalAwal,
-            'tanggalAkhir' => $tanggalAkhir,
-        ])->setPaper('a4', 'landscape');
+        $pdf = Pdf::loadView('laporan.piutang-pdf', compact(
+            'piutang',
+            'totalData',
+            'totalPiutang',
+            'totalDibayar',
+            'totalSisa',
+            'totalBelumLunas',
+            'totalSebagian',
+            'totalLunas',
+            'totalLewatJatuhTempo',
+            'totalHistoris',
+            'totalSistemBerjalan',
+            'tanggalAwal',
+            'tanggalAkhir'
+        ))->setPaper('a4', 'landscape');
 
         return $pdf->download($fileName);
     }
@@ -673,7 +617,7 @@ class LaporanController extends Controller
         $tanggalAwal = $request->tanggal_awal ?: 'awal';
         $tanggalAkhir = $request->tanggal_akhir ?: 'akhir';
 
-        $fileName = 'Laporan-Riwayat-Stok-' . $tanggalAwal . '-sd-' . $tanggalAkhir . '.xls';
+        $fileName = $this->namaFileLaporan('Laporan-Riwayat-Stok', $tanggalAwal, $tanggalAkhir, 'xls');
 
         return response()
             ->view('laporan.riwayat-stok-excel', compact(
@@ -741,7 +685,7 @@ class LaporanController extends Controller
         $tanggalAwal = $request->tanggal_awal ?: 'awal';
         $tanggalAkhir = $request->tanggal_akhir ?: 'akhir';
 
-        $fileName = 'Laporan-Riwayat-Stok-' . $tanggalAwal . '-sd-' . $tanggalAkhir . '.pdf';
+        $fileName = $this->namaFileLaporan('Laporan-Riwayat-Stok', $tanggalAwal, $tanggalAkhir, 'pdf');
 
         $pdf = Pdf::loadView('laporan.riwayat-stok-pdf', compact(
             'riwayatStok',
@@ -761,7 +705,7 @@ class LaporanController extends Controller
 
     private function queryLaporanPenjualan(Request $request)
     {
-        return Penjualan::with(['customer', 'user'])
+        return Penjualan::with(['customer', 'user', 'piutang'])
             ->when($request->tanggal_awal, function ($query) use ($request) {
                 $query->whereDate('tanggal_penjualan', '>=', $request->tanggal_awal);
             })
@@ -777,14 +721,25 @@ class LaporanController extends Controller
             ->when($request->status_pembayaran, function ($query) use ($request) {
                 $query->where('status_pembayaran', $request->status_pembayaran);
             })
+            ->when($request->tipe_invoice === 'historis', function ($query) {
+                $query->where('is_historical', true);
+            })
+            ->when($request->tipe_invoice === 'sistem', function ($query) {
+                $query->where(function ($subQuery) {
+                    $subQuery->where('is_historical', false)
+                        ->orWhereNull('is_historical');
+                });
+            })
             ->when($request->search, function ($query) use ($request) {
                 $search = $request->search;
 
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('nomor_invoice', 'like', "%{$search}%")
+                        ->orWhere('nomor_dokumen_asli', 'like', "%{$search}%")
                         ->orWhereHas('customer', function ($customerQuery) use ($search) {
                             $customerQuery->where('nama_customer', 'like', "%{$search}%")
-                                ->orWhere('nomor_telepon', 'like', "%{$search}%");
+                                ->orWhere('nomor_telepon', 'like', "%{$search}%")
+                                ->orWhere('npwp', 'like', "%{$search}%");
                         });
                 });
             });
@@ -805,14 +760,36 @@ class LaporanController extends Controller
             ->when($request->status_penerimaan, function ($query) use ($request) {
                 $query->where('status_penerimaan', $request->status_penerimaan);
             })
+            ->when($request->tipe_invoice === 'historis', function ($query) {
+                $query->where('is_historical', true);
+            })
+            ->when($request->tipe_invoice === 'sistem', function ($query) {
+                $query->where(function ($subQuery) {
+                    $subQuery->where('is_historical', false)
+                        ->orWhereNull('is_historical');
+                });
+            })
+            ->when($request->pengaruh_stok === 'mempengaruhi', function ($query) {
+                $query->where(function ($subQuery) {
+                    $subQuery->where('affect_stock', true)
+                        ->orWhereNull('affect_stock');
+                });
+            })
+            ->when($request->pengaruh_stok === 'tidak_mempengaruhi', function ($query) {
+                $query->where('affect_stock', false);
+            })
             ->when($request->search, function ($query) use ($request) {
                 $search = $request->search;
 
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('nomor_pembelian', 'like', "%{$search}%")
+                        ->orWhere('nomor_dokumen_asli', 'like', "%{$search}%")
+                        ->orWhere('nomor_delivery_order', 'like', "%{$search}%")
+                        ->orWhere('nomor_surat_jalan', 'like', "%{$search}%")
                         ->orWhereHas('supplier', function ($supplierQuery) use ($search) {
                             $supplierQuery->where('nama_supplier', 'like', "%{$search}%")
-                                ->orWhere('nomor_telepon', 'like', "%{$search}%");
+                                ->orWhere('nomor_telepon', 'like', "%{$search}%")
+                                ->orWhere('npwp', 'like', "%{$search}%");
                         });
                 });
             });
@@ -841,14 +818,31 @@ class LaporanController extends Controller
                 $query->where('status_piutang', '!=', 'lunas')
                     ->whereDate('tanggal_jatuh_tempo', '>=', now()->toDateString());
             })
+            ->when($request->tipe_invoice === 'historis', function ($query) {
+                $query->whereHas('penjualan', function ($penjualanQuery) {
+                    $penjualanQuery->where('is_historical', true);
+                });
+            })
+            ->when($request->tipe_invoice === 'sistem', function ($query) {
+                $query->whereHas('penjualan', function ($penjualanQuery) {
+                    $penjualanQuery->where(function ($subQuery) {
+                        $subQuery->where('is_historical', false)
+                            ->orWhereNull('is_historical');
+                    });
+                });
+            })
             ->when($request->search, function ($query) use ($request) {
                 $search = $request->search;
 
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery->where('nomor_invoice', 'like', "%{$search}%")
+                        ->orWhereHas('penjualan', function ($penjualanQuery) use ($search) {
+                            $penjualanQuery->where('nomor_dokumen_asli', 'like', "%{$search}%");
+                        })
                         ->orWhereHas('customer', function ($customerQuery) use ($search) {
                             $customerQuery->where('nama_customer', 'like', "%{$search}%")
-                                ->orWhere('nomor_telepon', 'like', "%{$search}%");
+                                ->orWhere('nomor_telepon', 'like', "%{$search}%")
+                                ->orWhere('npwp', 'like', "%{$search}%");
                         });
                 });
             });
@@ -917,5 +911,147 @@ class LaporanController extends Controller
                         });
                 });
             });
+    }
+
+    private function hitungRingkasanPenjualan($penjualan): array
+    {
+        $totalTransaksi = $penjualan->count();
+        $totalSubtotal = $penjualan->sum('subtotal');
+        $totalPajak = $penjualan->sum('nilai_pajak');
+        $totalAkhir = $penjualan->sum('total_akhir');
+
+        $totalTunai = $penjualan
+            ->where('metode_pembayaran', 'tunai')
+            ->sum('total_akhir');
+
+        $totalKredit = $penjualan
+            ->where('metode_pembayaran', 'kredit')
+            ->sum('total_akhir');
+
+        $totalHistoris = $penjualan
+            ->filter(function ($item) {
+                return (bool) ($item->is_historical ?? false);
+            })
+            ->count();
+
+        $totalSistemBerjalan = $penjualan
+            ->filter(function ($item) {
+                return !(bool) ($item->is_historical ?? false);
+            })
+            ->count();
+
+        $totalPiutang = $penjualan->sum(function ($item) {
+            return $item->piutang->total_piutang ?? 0;
+        });
+
+        $totalDibayar = $penjualan->sum(function ($item) {
+            return $item->piutang->total_dibayar ?? 0;
+        });
+
+        $totalSisaPiutang = $penjualan->sum(function ($item) {
+            return $item->piutang->sisa_piutang ?? 0;
+        });
+
+        return compact(
+            'totalTransaksi',
+            'totalSubtotal',
+            'totalPajak',
+            'totalAkhir',
+            'totalTunai',
+            'totalKredit',
+            'totalHistoris',
+            'totalSistemBerjalan',
+            'totalPiutang',
+            'totalDibayar',
+            'totalSisaPiutang'
+        );
+    }
+
+    private function hitungRingkasanPembelian($pembelian): array
+    {
+        $totalTransaksi = $pembelian->count();
+        $totalSubtotal = $pembelian->sum('subtotal');
+        $totalPajak = $pembelian->sum('nilai_pajak');
+        $totalAkhir = $pembelian->sum('total_akhir');
+
+        $totalDipesan = 0;
+        $totalDiterima = 0;
+
+        foreach ($pembelian as $item) {
+            foreach ($item->detailPembelian as $detail) {
+                $jumlahDipesan = $detail->jumlah_dipesan ?? $detail->jumlah;
+                $jumlahDiterima = $detail->jumlah;
+
+                $totalDipesan += $jumlahDipesan;
+                $totalDiterima += $jumlahDiterima;
+            }
+        }
+
+        $totalSisa = max($totalDipesan - $totalDiterima, 0);
+
+        $totalLengkap = $pembelian
+            ->where('status_penerimaan', 'lengkap')
+            ->count();
+
+        $totalSebagian = $pembelian
+            ->where('status_penerimaan', 'sebagian')
+            ->count();
+
+        $totalBelumDikirim = $pembelian
+            ->where('status_penerimaan', 'belum_dikirim')
+            ->count();
+
+        $totalHistoris = $pembelian
+            ->filter(function ($item) {
+                return (bool) ($item->is_historical ?? false);
+            })
+            ->count();
+
+        $totalSistemBerjalan = $pembelian
+            ->filter(function ($item) {
+                return !(bool) ($item->is_historical ?? false);
+            })
+            ->count();
+
+        $totalMemengaruhiStok = $pembelian
+            ->filter(function ($item) {
+                return (bool) ($item->affect_stock ?? true);
+            })
+            ->count();
+
+        $totalTidakMemengaruhiStok = $pembelian
+            ->filter(function ($item) {
+                return !(bool) ($item->affect_stock ?? true);
+            })
+            ->count();
+
+        return compact(
+            'totalTransaksi',
+            'totalSubtotal',
+            'totalPajak',
+            'totalAkhir',
+            'totalDipesan',
+            'totalDiterima',
+            'totalSisa',
+            'totalLengkap',
+            'totalSebagian',
+            'totalBelumDikirim',
+            'totalHistoris',
+            'totalSistemBerjalan',
+            'totalMemengaruhiStok',
+            'totalTidakMemengaruhiStok'
+        );
+    }
+
+    private function namaFileLaporan(string $prefix, string $tanggalAwal, string $tanggalAkhir, string $extension): string
+    {
+        $awal = $tanggalAwal ?: 'awal';
+        $akhir = $tanggalAkhir ?: 'akhir';
+
+        $namaFile = $prefix . '-' . $awal . '-sd-' . $akhir;
+        $namaFile = preg_replace('/[^A-Za-z0-9\-_]+/', '-', $namaFile);
+        $namaFile = trim(preg_replace('/-+/', '-', $namaFile), '-');
+
+        return $namaFile . '.' . $extension;
     }
 }

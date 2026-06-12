@@ -21,13 +21,19 @@
             </div>
             @endif
 
+            @if (session('error'))
+            <div class="mb-4 p-4 bg-red-100 text-red-800 rounded-md">
+                {{ session('error') }}
+            </div>
+            @endif
+
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
 
                 <form method="GET" action="{{ route('pembelian.index') }}" class="mb-4 flex gap-2">
                     <input type="text"
                         name="search"
                         value="{{ $search }}"
-                        placeholder="Cari nomor pembelian atau nama supplier..."
+                        placeholder="Cari nomor pembelian, DO, surat jalan, atau nama supplier..."
                         class="w-full border-gray-300 rounded-md shadow-sm">
 
                     <button type="submit"
@@ -49,6 +55,7 @@
                                 <th class="border px-3 py-2 text-left">Nomor Pembelian</th>
                                 <th class="border px-3 py-2 text-left">Tanggal</th>
                                 <th class="border px-3 py-2 text-left">Supplier</th>
+                                <th class="border px-3 py-2 text-center">Status Terima</th>
                                 <th class="border px-3 py-2 text-right">Subtotal</th>
                                 <th class="border px-3 py-2 text-right">Pajak</th>
                                 <th class="border px-3 py-2 text-right">Total Akhir</th>
@@ -58,21 +65,55 @@
 
                         <tbody>
                             @forelse ($pembelian as $item)
+                            @php
+                            $statusPenerimaan = $item->status_penerimaan ?? 'lengkap';
+                            @endphp
+
                             <tr>
                                 <td class="border px-3 py-2">
                                     {{ $loop->iteration + ($pembelian->currentPage() - 1) * $pembelian->perPage() }}
                                 </td>
 
                                 <td class="border px-3 py-2">
-                                    {{ $item->nomor_pembelian }}
+                                    <div class="font-semibold">
+                                        {{ $item->nomor_pembelian }}
+                                    </div>
+
+                                    @if ($item->nomor_delivery_order)
+                                    <div class="text-xs text-gray-500">
+                                        DO: {{ $item->nomor_delivery_order }}
+                                    </div>
+                                    @endif
+
+                                    @if ($item->nomor_surat_jalan)
+                                    <div class="text-xs text-gray-500">
+                                        SJ: {{ $item->nomor_surat_jalan }}
+                                    </div>
+                                    @endif
                                 </td>
 
-                                <td class="border px-3 py-2">
+                                <td class="border px-3 py-2 whitespace-nowrap">
                                     {{ $item->tanggal_pembelian->format('d-m-Y') }}
                                 </td>
 
                                 <td class="border px-3 py-2">
                                     {{ $item->supplier->nama_supplier ?? '-' }}
+                                </td>
+
+                                <td class="border px-3 py-2 text-center">
+                                    @if ($statusPenerimaan === 'lengkap')
+                                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-sm">
+                                        Lengkap
+                                    </span>
+                                    @elseif ($statusPenerimaan === 'sebagian')
+                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-sm">
+                                        Sebagian
+                                    </span>
+                                    @else
+                                    <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-sm">
+                                        Belum Dikirim
+                                    </span>
+                                    @endif
                                 </td>
 
                                 <td class="border px-3 py-2 text-right">
@@ -88,15 +129,22 @@
                                 </td>
 
                                 <td class="border px-3 py-2 text-center">
-                                    <a href="{{ route('pembelian.show', $item->id_pembelian) }}"
-                                        class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
-                                        Detail
-                                    </a>
+                                    <div class="flex justify-center gap-2">
+                                        <a href="{{ route('pembelian.show', $item->id_pembelian) }}"
+                                            class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                            Detail
+                                        </a>
+
+                                        <a href="{{ route('pembelian.edit', $item->id_pembelian) }}"
+                                            class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                                            Edit
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="8" class="border px-3 py-4 text-center text-gray-500">
+                                <td colspan="9" class="border px-3 py-4 text-center text-gray-500">
                                     Data pembelian belum tersedia.
                                 </td>
                             </tr>
@@ -106,7 +154,7 @@
                 </div>
 
                 <div class="mt-4">
-                    {{ $pembelian->links() }}
+                    {{ $pembelian->appends(['search' => $search])->links() }}
                 </div>
 
             </div>

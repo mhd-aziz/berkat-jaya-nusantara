@@ -14,6 +14,10 @@
 
                 @if ($errors->any())
                 <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
+                    <div class="font-semibold mb-1">
+                        Data belum valid:
+                    </div>
+
                     <ul class="list-disc list-inside">
                         @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -27,13 +31,51 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                         <div>
-                            <label class="block mb-1 font-medium">Nomor Pembelian</label>
+                            <label class="block mb-1 font-medium">
+                                Nomor Invoice / Nota Pembelian <span class="text-red-600">*</span>
+                            </label>
+
                             <input type="text"
-                                value="{{ $nomorPembelian }}"
-                                class="w-full border-gray-300 rounded-md shadow-sm bg-gray-100"
-                                readonly>
+                                name="nomor_pembelian"
+                                value="{{ old('nomor_pembelian', $nomorPembelian) }}"
+                                placeholder="Contoh: INV-SUP-001 atau PB-20260612-0001"
+                                class="w-full border-gray-300 rounded-md shadow-sm"
+                                required>
+
                             <p class="text-sm text-gray-500 mt-1">
-                                Nomor dibuat otomatis.
+                                Nomor diisi manual sesuai nota/invoice dari supplier. Tidak boleh sama.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block mb-1 font-medium">
+                                Nomor Delivery Order Supplier
+                            </label>
+
+                            <input type="text"
+                                name="nomor_delivery_order"
+                                value="{{ old('nomor_delivery_order', $nomorDeliveryOrder ?? '') }}"
+                                placeholder="Contoh: DO-SUP-20260612-0001"
+                                class="w-full border-gray-300 rounded-md shadow-sm">
+
+                            <p class="text-sm text-gray-500 mt-1">
+                                Opsional. Isi sesuai dokumen DO dari supplier.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block mb-1 font-medium">
+                                Nomor Surat Jalan Supplier
+                            </label>
+
+                            <input type="text"
+                                name="nomor_surat_jalan"
+                                value="{{ old('nomor_surat_jalan', $nomorSuratJalan ?? '') }}"
+                                placeholder="Contoh: SJ-SUP-20260612-0001"
+                                class="w-full border-gray-300 rounded-md shadow-sm">
+
+                            <p class="text-sm text-gray-500 mt-1">
+                                Opsional. Isi sesuai surat jalan dari supplier.
                             </p>
                         </div>
 
@@ -46,7 +88,7 @@
                                 required>
                         </div>
 
-                        <div>
+                        <div class="md:col-span-2">
                             <div class="flex items-center justify-between mb-1">
                                 <label class="block font-medium">Supplier</label>
 
@@ -63,12 +105,18 @@
                                 placeholder="Cari kode atau nama supplier..."
                                 required>
                                 <option value="">-- Cari / Pilih Supplier --</option>
+
                                 @foreach ($suppliers as $supplier)
                                 <option value="{{ $supplier->id_supplier }}"
                                     {{ old('id_supplier') == $supplier->id_supplier ? 'selected' : '' }}>
                                     {{ $supplier->kode_supplier }} - {{ $supplier->nama_supplier }}
+
                                     @if ($supplier->nomor_telepon)
                                     | {{ $supplier->nomor_telepon }}
+                                    @endif
+
+                                    @if ($supplier->npwp)
+                                    | NPWP: {{ $supplier->npwp }}
                                     @endif
                                 </option>
                                 @endforeach
@@ -104,6 +152,7 @@
                                                 placeholder="Cari kode atau nama barang..."
                                                 required>
                                                 <option value="">-- Cari / Pilih Barang --</option>
+
                                                 @foreach ($barang as $item)
                                                 <option value="{{ $item->id_barang }}">
                                                     {{ $item->kode_barang }} - {{ $item->nama_barang }}
@@ -163,6 +212,7 @@
                                             placeholder="Cari kode atau nama barang..."
                                             required>
                                             <option value="">-- Cari / Pilih Barang --</option>
+
                                             @foreach ($barang as $item)
                                             <option value="{{ $item->id_barang }}">
                                                 {{ $item->kode_barang }} - {{ $item->nama_barang }}
@@ -277,7 +327,8 @@
                                             <strong>Pajak hanya ditampilkan</strong>
                                             <br>
                                             <small class="text-gray-500">
-                                                Untuk pembelian yang pajaknya hanya ingin dicatat/ditampilkan, tetapi tidak menambah total.
+                                                Untuk pembelian yang pajaknya hanya ingin dicatat/ditampilkan,
+                                                tetapi tidak menambah total.
                                             </small>
                                         </span>
                                     </label>
@@ -338,32 +389,49 @@
                 @csrf
 
                 <div id="quickSupplierMessage"
-                    class="hidden mb-4 p-4 rounded-md">
+                    class="hidden mb-4 p-4 rounded-md whitespace-pre-line">
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="md:col-span-2">
                         <label class="block mb-1 font-medium">
-                            Nama Supplier <span class="text-red-600">*</span>
+                            Nama Perusahaan Supplier <span class="text-red-600">*</span>
                         </label>
                         <input type="text"
                             name="nama_supplier"
                             id="quickNamaSupplier"
+                            placeholder="Contoh: PT Berkat Jaya Nusantara"
                             class="w-full border-gray-300 rounded-md shadow-sm"
                             required>
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Wajib diisi. Nama perusahaan tidak boleh sama dengan supplier lain.
+                        </p>
                     </div>
 
                     <div class="md:col-span-2">
-                        <label class="block mb-1 font-medium">
-                            Nomor Handphone <span class="text-red-600">*</span>
-                        </label>
+                        <label class="block mb-1 font-medium">Nomor Telepon</label>
                         <input type="text"
                             name="nomor_telepon"
                             id="quickNomorTelepon"
-                            class="w-full border-gray-300 rounded-md shadow-sm"
-                            required>
+                            placeholder="Contoh: 08123456789"
+                            class="w-full border-gray-300 rounded-md shadow-sm">
+
                         <p class="text-sm text-gray-500 mt-1">
-                            Jika nama atau nomor handphone sudah tersedia, supplier lama akan langsung dipilih.
+                            Opsional. Jika nomor telepon sudah tersedia, supplier lama akan langsung dipilih.
+                        </p>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block mb-1 font-medium">NPWP Perusahaan</label>
+                        <input type="text"
+                            name="npwp"
+                            id="quickNpwpSupplier"
+                            placeholder="Contoh: 01.234.567.8-999.000"
+                            class="w-full border-gray-300 rounded-md shadow-sm">
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Opsional. Jika NPWP sudah tersedia, supplier lama akan langsung dipilih.
                         </p>
                     </div>
 
@@ -372,7 +440,12 @@
                         <textarea name="alamat"
                             id="quickAlamatSupplier"
                             rows="2"
+                            placeholder="Alamat lengkap perusahaan supplier..."
                             class="w-full border-gray-300 rounded-md shadow-sm"></textarea>
+
+                        <p class="text-sm text-gray-500 mt-1">
+                            Opsional. Jika alamat sudah tersedia, supplier lama akan langsung dipilih.
+                        </p>
                     </div>
 
                     <div class="md:col-span-2">
@@ -380,6 +453,7 @@
                         <textarea name="catatan"
                             id="quickCatatanSupplier"
                             rows="2"
+                            placeholder="Catatan tambahan tentang supplier..."
                             class="w-full border-gray-300 rounded-md shadow-sm"></textarea>
                     </div>
                 </div>
@@ -424,7 +498,7 @@
                 allowEmptyOption: true,
                 maxOptions: 100,
                 searchField: ['text'],
-                placeholder: 'Cari kode atau nama supplier...'
+                placeholder: 'Cari kode, nama, nomor telepon, atau NPWP supplier...'
             });
         }
 
@@ -488,6 +562,7 @@
 
         function bukaModalSupplier() {
             const modal = document.getElementById('modalSupplier');
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
 
@@ -497,6 +572,7 @@
 
         function tutupModalSupplier() {
             const modal = document.getElementById('modalSupplier');
+
             modal.classList.add('hidden');
             modal.classList.remove('flex');
 
@@ -528,10 +604,23 @@
             box.innerText = message;
         }
 
+        function buatTextSupplier(supplier) {
+            let text = supplier.kode_supplier + ' - ' + supplier.nama_supplier;
+
+            if (supplier.nomor_telepon) {
+                text += ' | ' + supplier.nomor_telepon;
+            }
+
+            if (supplier.npwp) {
+                text += ' | NPWP: ' + supplier.npwp;
+            }
+
+            return text;
+        }
+
         function pilihSupplier(supplier) {
             const supplierSelect = document.getElementById('supplierSelect');
-            const text = supplier.kode_supplier + ' - ' + supplier.nama_supplier +
-                (supplier.nomor_telepon ? ' | ' + supplier.nomor_telepon : '');
+            const text = buatTextSupplier(supplier);
 
             let option = supplierSelect.querySelector('option[value="' + supplier.id_supplier + '"]');
 
@@ -544,6 +633,11 @@
 
             if (supplierSelect.tomselect) {
                 supplierSelect.tomselect.addOption({
+                    value: String(supplier.id_supplier),
+                    text: text
+                });
+
+                supplierSelect.tomselect.updateOption(String(supplier.id_supplier), {
                     value: String(supplier.id_supplier),
                     text: text
                 });

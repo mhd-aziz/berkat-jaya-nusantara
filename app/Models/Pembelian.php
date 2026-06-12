@@ -14,6 +14,8 @@ class Pembelian extends Model
 
     protected $fillable = [
         'nomor_pembelian',
+        'nomor_delivery_order',
+        'nomor_surat_jalan',
         'is_historical',
         'affect_stock',
         'status_penerimaan',

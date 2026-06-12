@@ -1,3 +1,11 @@
+@php
+$namaPerusahaan = 'CV. BERKAT JAYA NUSANTARA';
+$alamatPerusahaan = 'Alamat perusahaan belum diisi';
+$teleponPerusahaan = 'Telepon belum diisi';
+
+$totalPotensiMargin = $totalEstimasiNilaiJual - $totalNilaiStok;
+@endphp
+
 <!DOCTYPE html>
 <html>
 
@@ -8,42 +16,56 @@
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 10px;
+            font-size: 8px;
             color: #111827;
+        }
+
+        .company {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .company-info {
+            text-align: center;
+            font-size: 8px;
+            color: #4b5563;
+            margin-bottom: 4px;
         }
 
         .title {
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .subtitle {
             text-align: center;
-            font-size: 11px;
-            margin-bottom: 14px;
+            font-size: 9px;
+            margin-bottom: 10px;
         }
 
         .summary-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .summary-table td {
             border: 1px solid #d1d5db;
-            padding: 6px;
+            padding: 4px;
             vertical-align: top;
         }
 
         .summary-label {
-            font-size: 9px;
+            font-size: 7.5px;
             color: #4b5563;
         }
 
         .summary-value {
-            font-size: 13px;
+            font-size: 9.5px;
             font-weight: bold;
             margin-top: 2px;
         }
@@ -56,14 +78,14 @@
         .data-table th {
             border: 1px solid #9ca3af;
             background-color: #e5e7eb;
-            padding: 5px;
+            padding: 4px 3px;
             font-weight: bold;
             text-align: center;
         }
 
         .data-table td {
             border: 1px solid #d1d5db;
-            padding: 5px;
+            padding: 3px;
             vertical-align: top;
         }
 
@@ -90,14 +112,24 @@
             font-weight: bold;
         }
 
-        .nonaktif {
+        .status-nonaktif {
             color: #b91c1c;
-            font-size: 9px;
+            font-weight: bold;
+        }
+
+        .status-aktif {
+            color: #047857;
+            font-weight: bold;
+        }
+
+        .small-text {
+            font-size: 7px;
+            color: #4b5563;
         }
 
         .footer {
-            margin-top: 14px;
-            font-size: 9px;
+            margin-top: 10px;
+            font-size: 8px;
             color: #6b7280;
             text-align: right;
         }
@@ -105,13 +137,21 @@
 </head>
 
 <body>
+    <div class="company">
+        {{ $namaPerusahaan }}
+    </div>
+
+    <div class="company-info">
+        {{ $alamatPerusahaan }} | Telp: {{ $teleponPerusahaan }}
+    </div>
+
     <div class="title">
         LAPORAN STOK BARANG
     </div>
 
     <div class="subtitle">
-        Berkat Jaya Nusantara<br>
-        Batas Stok Rendah: {{ $batasStokRendah }} |
+        Batas Stok Rendah: {{ $batasStokRendah }}
+        |
         Dicetak: {{ now()->format('d-m-Y H:i') }}
     </div>
 
@@ -124,7 +164,9 @@
 
             <td>
                 <div class="summary-label">Total Stok</div>
-                <div class="summary-value">{{ number_format($totalStok, 0, ',', '.') }}</div>
+                <div class="summary-value">
+                    {{ number_format($totalStok, 0, ',', '.') }}
+                </div>
             </td>
 
             <td>
@@ -139,17 +181,24 @@
         </tr>
 
         <tr>
-            <td colspan="2">
+            <td>
                 <div class="summary-label">Estimasi Nilai Stok</div>
                 <div class="summary-value">
                     Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}
                 </div>
             </td>
 
-            <td colspan="2">
+            <td>
                 <div class="summary-label">Estimasi Nilai Jual</div>
                 <div class="summary-value">
                     Rp {{ number_format($totalEstimasiNilaiJual, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td colspan="2">
+                <div class="summary-label">Estimasi Margin Kotor</div>
+                <div class="summary-value">
+                    Rp {{ number_format($totalPotensiMargin, 0, ',', '.') }}
                 </div>
             </td>
         </tr>
@@ -159,37 +208,65 @@
         <thead>
             <tr>
                 <th style="width: 3%;">No</th>
-                <th style="width: 9%;">Kode</th>
-                <th style="width: 18%;">Nama Barang</th>
-                <th style="width: 7%;">Satuan</th>
-                <th style="width: 7%;">Stok</th>
-                <th style="width: 11%;">Harga Beli</th>
-                <th style="width: 12%;">Nilai Stok</th>
-                <th style="width: 11%;">Harga Jual</th>
-                <th style="width: 12%;">Estimasi Jual</th>
-                <th style="width: 10%;">Status</th>
+                <th style="width: 8%;">Kode</th>
+                <th style="width: 15%;">Nama Barang</th>
+                <th style="width: 6%;">Satuan</th>
+                <th style="width: 11%;">Hitung Harga</th>
+                <th style="width: 6%;">Stok</th>
+                <th style="width: 9%;">Harga Beli</th>
+                <th style="width: 10%;">Nilai Stok</th>
+                <th style="width: 9%;">Harga Jual</th>
+                <th style="width: 10%;">Est. Jual</th>
+                <th style="width: 8%;">Margin</th>
+                <th style="width: 5%;">Status</th>
             </tr>
         </thead>
 
         <tbody>
             @forelse ($barang as $item)
             @php
-            $nilaiStok = $item->stok_saat_ini * ($item->harga_beli_terakhir ?? 0);
-            $estimasiNilaiJual = $item->stok_saat_ini * ($item->harga_jual_default ?? 0);
+            $stokSaatIni = (float) ($item->stok_saat_ini ?? 0);
+            $hargaBeli = (float) ($item->harga_beli_terakhir ?? 0);
+            $hargaJual = (float) ($item->harga_jual_default ?? 0);
 
-            if ($item->stok_saat_ini <= 0) {
+            $nilaiStok = $stokSaatIni * $hargaBeli;
+            $estimasiNilaiJual = $stokSaatIni * $hargaJual;
+            $estimasiMargin = $estimasiNilaiJual - $nilaiStok;
+
+            $tipePerhitungan = $item->tipe_perhitungan_harga ?? 'normal';
+            $satuan = $item->satuan ?? '-';
+            $satuanHitung = $item->satuan_hitung_harga ?? $satuan;
+            $isiPerSatuan = (float) ($item->isi_per_satuan ?? 1);
+
+            if ($stokSaatIni <= 0) {
                 $statusStok='Kosong' ;
                 $statusClass='status-kosong' ;
-                } elseif ($item->stok_saat_ini <= $batasStokRendah) {
-                    $statusStok='Stok Rendah' ;
-                    $statusClass='status-rendah' ;
-                    } else {
-                    $statusStok='Tersedia' ;
-                    $statusClass='status-tersedia' ;
-                    }
-                    @endphp
+                } elseif ($stokSaatIni <=$batasStokRendah) {
+                $statusStok='Rendah' ;
+                $statusClass='status-rendah' ;
+                } else {
+                $statusStok='Tersedia' ;
+                $statusClass='status-tersedia' ;
+                }
 
-                    <tr>
+                $statusBarangClass=$item->status_aktif ? 'status-aktif' : 'status-nonaktif';
+
+                if ($tipePerhitungan === 'isi_kemasan') {
+                $perhitunganText =
+                'Isi Kemasan';
+                $perhitunganDetail =
+                '1 ' . strtoupper($satuan) . ' = ' .
+                rtrim(rtrim(number_format($isiPerSatuan, 3, ',', '.'), '0'), ',') .
+                ' ' . strtoupper($satuanHitung);
+                $satuanHarga = $satuanHitung;
+                } else {
+                $perhitunganText = 'Normal';
+                $perhitunganDetail = 'Per ' . strtoupper($satuan);
+                $satuanHarga = $satuan;
+                }
+                @endphp
+
+                <tr>
                     <td class="text-center">
                         {{ $loop->iteration }}
                     </td>
@@ -203,20 +280,30 @@
 
                         @if (!$item->status_aktif)
                         <br>
-                        <span class="nonaktif">Barang nonaktif</span>
+                        <span class="{{ $statusBarangClass }}">
+                            Nonaktif
+                        </span>
                         @endif
                     </td>
 
                     <td class="text-center">
-                        {{ $item->satuan }}
+                        {{ strtoupper($satuan) }}
+                    </td>
+
+                    <td>
+                        {{ $perhitunganText }}
+                        <br>
+                        <span class="small-text">
+                            {{ $perhitunganDetail }}
+                        </span>
                     </td>
 
                     <td class="text-center">
-                        {{ number_format($item->stok_saat_ini, 0, ',', '.') }}
+                        {{ number_format($stokSaatIni, 0, ',', '.') }}
                     </td>
 
                     <td class="text-right">
-                        Rp {{ number_format($item->harga_beli_terakhir ?? 0, 0, ',', '.') }}
+                        Rp {{ number_format($hargaBeli, 0, ',', '.') }}
                     </td>
 
                     <td class="text-right">
@@ -224,11 +311,19 @@
                     </td>
 
                     <td class="text-right">
-                        Rp {{ number_format($item->harga_jual_default ?? 0, 0, ',', '.') }}
+                        Rp {{ number_format($hargaJual, 0, ',', '.') }}
+                        <br>
+                        <span class="small-text">
+                            / {{ strtoupper($satuanHarga) }}
+                        </span>
                     </td>
 
                     <td class="text-right">
                         Rp {{ number_format($estimasiNilaiJual, 0, ',', '.') }}
+                    </td>
+
+                    <td class="text-right">
+                        Rp {{ number_format($estimasiMargin, 0, ',', '.') }}
                     </td>
 
                     <td class="text-center">
@@ -236,14 +331,14 @@
                             {{ $statusStok }}
                         </span>
                     </td>
-                    </tr>
-                    @empty
-                    <tr>
-                        <td colspan="10" class="text-center">
-                            Data stok barang belum tersedia.
-                        </td>
-                    </tr>
-                    @endforelse
+                </tr>
+                @empty
+                <tr>
+                    <td colspan="12" class="text-center">
+                        Data stok barang belum tersedia.
+                    </td>
+                </tr>
+                @endforelse
         </tbody>
     </table>
 

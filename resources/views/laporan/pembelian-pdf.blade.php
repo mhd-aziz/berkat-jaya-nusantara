@@ -1,3 +1,12 @@
+@php
+$namaPerusahaan = 'CV. BERKAT JAYA NUSANTARA';
+$alamatPerusahaan = 'Alamat perusahaan belum diisi';
+$teleponPerusahaan = 'Telepon belum diisi';
+
+$periodeAwal = $tanggalAwal === 'awal' ? 'Awal' : $tanggalAwal;
+$periodeAkhir = $tanggalAkhir === 'akhir' ? 'Akhir' : $tanggalAkhir;
+@endphp
+
 <!DOCTYPE html>
 <html>
 
@@ -8,42 +17,56 @@
     <style>
         body {
             font-family: DejaVu Sans, sans-serif;
-            font-size: 9px;
+            font-size: 8px;
             color: #111827;
+        }
+
+        .company {
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+
+        .company-info {
+            text-align: center;
+            font-size: 8px;
+            color: #4b5563;
+            margin-bottom: 4px;
         }
 
         .title {
             text-align: center;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
 
         .subtitle {
             text-align: center;
-            font-size: 11px;
-            margin-bottom: 14px;
+            font-size: 9px;
+            margin-bottom: 10px;
         }
 
         .summary-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
 
         .summary-table td {
             border: 1px solid #d1d5db;
-            padding: 6px;
+            padding: 4px;
             vertical-align: top;
         }
 
         .summary-label {
-            font-size: 9px;
+            font-size: 7.5px;
             color: #4b5563;
         }
 
         .summary-value {
-            font-size: 12px;
+            font-size: 9.5px;
             font-weight: bold;
             margin-top: 2px;
         }
@@ -56,14 +79,14 @@
         .data-table th {
             border: 1px solid #9ca3af;
             background-color: #e5e7eb;
-            padding: 5px;
+            padding: 4px 3px;
             font-weight: bold;
             text-align: center;
         }
 
         .data-table td {
             border: 1px solid #d1d5db;
-            padding: 5px;
+            padding: 3px;
             vertical-align: top;
         }
 
@@ -81,7 +104,7 @@
         }
 
         .status-sebagian {
-            color: #1d4ed8;
+            color: #92400e;
             font-weight: bold;
         }
 
@@ -90,9 +113,34 @@
             font-weight: bold;
         }
 
+        .badge-historis {
+            color: #6d28d9;
+            font-weight: bold;
+        }
+
+        .badge-sistem {
+            color: #374151;
+            font-weight: bold;
+        }
+
+        .badge-stok-ya {
+            color: #1d4ed8;
+            font-weight: bold;
+        }
+
+        .badge-stok-tidak {
+            color: #c2410c;
+            font-weight: bold;
+        }
+
+        .small-text {
+            font-size: 7px;
+            color: #4b5563;
+        }
+
         .footer {
-            margin-top: 14px;
-            font-size: 9px;
+            margin-top: 10px;
+            font-size: 8px;
             color: #6b7280;
             text-align: right;
         }
@@ -100,16 +148,20 @@
 </head>
 
 <body>
+    <div class="company">
+        {{ $namaPerusahaan }}
+    </div>
+
+    <div class="company-info">
+        {{ $alamatPerusahaan }} | Telp: {{ $teleponPerusahaan }}
+    </div>
+
     <div class="title">
         LAPORAN PEMBELIAN
     </div>
 
     <div class="subtitle">
-        Berkat Jaya Nusantara<br>
-        Periode:
-        {{ $tanggalAwal === 'awal' ? 'Awal' : $tanggalAwal }}
-        s/d
-        {{ $tanggalAkhir === 'akhir' ? 'Akhir' : $tanggalAkhir }}
+        Periode: {{ $periodeAwal }} s/d {{ $periodeAkhir }}
         |
         Dicetak: {{ now()->format('d-m-Y H:i') }}
     </div>
@@ -119,25 +171,11 @@
             <td>
                 <div class="summary-label">Total Transaksi</div>
                 <div class="summary-value">{{ $totalTransaksi }}</div>
+                <div class="small-text">
+                    Sistem: {{ $totalSistemBerjalan ?? 0 }} | Historis: {{ $totalHistoris ?? 0 }}
+                </div>
             </td>
 
-            <td>
-                <div class="summary-label">Total Barang Dipesan</div>
-                <div class="summary-value">{{ number_format($totalDipesan, 0, ',', '.') }}</div>
-            </td>
-
-            <td>
-                <div class="summary-label">Total Barang Diterima</div>
-                <div class="summary-value">{{ number_format($totalDiterima, 0, ',', '.') }}</div>
-            </td>
-
-            <td>
-                <div class="summary-label">Total Sisa Belum Dikirim</div>
-                <div class="summary-value">{{ number_format($totalSisa, 0, ',', '.') }}</div>
-            </td>
-        </tr>
-
-        <tr>
             <td>
                 <div class="summary-label">Total Subtotal</div>
                 <div class="summary-value">
@@ -152,11 +190,58 @@
                 </div>
             </td>
 
-            <td colspan="2">
+            <td>
                 <div class="summary-label">Total Akhir</div>
                 <div class="summary-value">
                     Rp {{ number_format($totalAkhir, 0, ',', '.') }}
                 </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <div class="summary-label">Total Dipesan</div>
+                <div class="summary-value">
+                    {{ number_format($totalDipesan, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td>
+                <div class="summary-label">Total Diterima</div>
+                <div class="summary-value">
+                    {{ number_format($totalDiterima, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td>
+                <div class="summary-label">Sisa Belum Dikirim</div>
+                <div class="summary-value">
+                    {{ number_format($totalSisa, 0, ',', '.') }}
+                </div>
+            </td>
+
+            <td>
+                <div class="summary-label">Pengaruh Stok</div>
+                <div class="summary-value">
+                    {{ $totalMemengaruhiStok ?? 0 }} Ya / {{ $totalTidakMemengaruhiStok ?? 0 }} Tidak
+                </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <div class="summary-label">Status Lengkap</div>
+                <div class="summary-value">{{ $totalLengkap ?? 0 }}</div>
+            </td>
+
+            <td>
+                <div class="summary-label">Status Sebagian</div>
+                <div class="summary-value">{{ $totalSebagian ?? 0 }}</div>
+            </td>
+
+            <td colspan="2">
+                <div class="summary-label">Belum Dikirim</div>
+                <div class="summary-value">{{ $totalBelumDikirim ?? 0 }}</div>
             </td>
         </tr>
     </table>
@@ -165,18 +250,18 @@
         <thead>
             <tr>
                 <th style="width: 3%;">No</th>
-                <th style="width: 8%;">Tanggal</th>
-                <th style="width: 12%;">No. Pembelian</th>
-                <th style="width: 15%;">Supplier</th>
-                <th style="width: 10%;">No. Telepon</th>
-                <th style="width: 9%;">Status</th>
-                <th style="width: 7%;">Dipesan</th>
-                <th style="width: 7%;">Diterima</th>
-                <th style="width: 7%;">Sisa</th>
-                <th style="width: 9%;">Subtotal</th>
+                <th style="width: 7%;">Tanggal</th>
+                <th style="width: 15%;">Dokumen</th>
+                <th style="width: 14%;">Supplier</th>
+                <th style="width: 8%;">Status</th>
+                <th style="width: 7%;">Tipe</th>
+                <th style="width: 7%;">Stok</th>
+                <th style="width: 6%;">Pesan</th>
+                <th style="width: 6%;">Terima</th>
+                <th style="width: 6%;">Sisa</th>
+                <th style="width: 8%;">Subtotal</th>
                 <th style="width: 6%;">Pajak</th>
-                <th style="width: 10%;">Total</th>
-                <th style="width: 7%;">Admin</th>
+                <th style="width: 7%;">Total</th>
             </tr>
         </thead>
 
@@ -193,6 +278,8 @@
 
             $sisa = max($jumlahDipesan - $jumlahDiterima, 0);
             $statusPenerimaan = $item->status_penerimaan ?? 'lengkap';
+            $isHistoris = (bool) ($item->is_historical ?? false);
+            $affectStock = (bool) ($item->affect_stock ?? true);
 
             if ($statusPenerimaan === 'lengkap') {
             $statusText = 'Lengkap';
@@ -201,9 +288,15 @@
             $statusText = 'Sebagian';
             $statusClass = 'status-sebagian';
             } else {
-            $statusText = 'Belum Dikirim';
+            $statusText = 'Belum';
             $statusClass = 'status-belum';
             }
+
+            $tipeLabel = $isHistoris ? 'Historis' : 'Sistem';
+            $tipeClass = $isHistoris ? 'badge-historis' : 'badge-sistem';
+
+            $stokLabel = $affectStock ? 'Ya' : 'Tidak';
+            $stokClass = $affectStock ? 'badge-stok-ya' : 'badge-stok-tidak';
             @endphp
 
             <tr>
@@ -216,20 +309,53 @@
                 </td>
 
                 <td>
-                    {{ $item->nomor_pembelian }}
+                    <strong>{{ $item->nomor_pembelian }}</strong>
+
+                    @if ($item->nomor_dokumen_asli)
+                    <br>
+                    <span class="small-text">
+                        Asli: {{ $item->nomor_dokumen_asli }}
+                    </span>
+                    @endif
+
+                    @if ($item->nomor_delivery_order)
+                    <br>
+                    <span class="small-text">
+                        DO: {{ $item->nomor_delivery_order }}
+                    </span>
+                    @endif
+
+                    @if ($item->nomor_surat_jalan)
+                    <br>
+                    <span class="small-text">
+                        SJ: {{ $item->nomor_surat_jalan }}
+                    </span>
+                    @endif
                 </td>
 
                 <td>
                     {{ $item->supplier->nama_supplier ?? '-' }}
-                </td>
-
-                <td>
-                    {{ $item->supplier->nomor_telepon ?? '-' }}
+                    <br>
+                    <span class="small-text">
+                        {{ $item->supplier->nomor_telepon ?? '-' }}
+                    </span>
                 </td>
 
                 <td class="text-center">
                     <span class="{{ $statusClass }}">
                         {{ $statusText }}
+                    </span>
+                </td>
+
+                <td class="text-center">
+                    <span class="{{ $tipeClass }}">
+                        {{ $tipeLabel }}
+                    </span>
+                </td>
+
+                <td class="text-center">
+                    <span class="{{ $stokClass }}">
+                        {{ $stokLabel }}
                     </span>
                 </td>
 
@@ -255,10 +381,6 @@
 
                 <td class="text-right">
                     Rp {{ number_format($item->total_akhir, 0, ',', '.') }}
-                </td>
-
-                <td>
-                    {{ $item->user->nama_user ?? '-' }}
                 </td>
             </tr>
             @empty

@@ -3,231 +3,800 @@
     $pajakDitambahkan = $pembelian->pajak_ditambahkan ?? true;
     $statusPenerimaan = $pembelian->status_penerimaan ?? 'lengkap';
     $backUrl = request('back_url', route('pembelian.index'));
-    @endphp
 
-    <style>
-        @media print {
-            @page {
-                size: 80mm auto;
-                margin: 4mm;
+    $namaPerusahaan = 'CV. BERKAT JAYA NUSANTARA';
+    $alamatPerusahaan = 'Alamat perusahaan belum diisi';
+    $teleponPerusahaan = 'Telepon belum diisi';
+
+    $formatAngkaInvoice = function ($angka) {
+    return rtrim(rtrim(number_format((float) $angka, 3, ',', '.'), '0'), ',');
+    };
+
+    $terbilang = function ($nilai) use (&$terbilang) {
+    $nilai = abs((int) $nilai);
+
+    $huruf = [
+    '',
+    'satu',
+    'dua',
+    'tiga',
+    'empat',
+    'lima',
+    'enam',
+    'tujuh',
+    'delapan',
+    'sembilan',
+    'sepuluh',
+    'sebelas'
+    ];
+
+    if ($nilai < 12) {
+        return $huruf[$nilai];
+        }
+
+        if ($nilai < 20) {
+        return $terbilang($nilai - 10) . ' belas' ;
+        }
+
+        if ($nilai < 100) {
+        return $terbilang(floor($nilai / 10)) . ' puluh ' . $terbilang($nilai % 10);
+        }
+
+        if ($nilai < 200) {
+        return 'seratus ' . $terbilang($nilai - 100);
+        }
+
+        if ($nilai < 1000) {
+        return $terbilang(floor($nilai / 100)) . ' ratus ' . $terbilang($nilai % 100);
+        }
+
+        if ($nilai < 2000) {
+        return 'seribu ' . $terbilang($nilai - 1000);
+        }
+
+        if ($nilai < 1000000) {
+        return $terbilang(floor($nilai / 1000)) . ' ribu ' . $terbilang($nilai % 1000);
+        }
+
+        if ($nilai < 1000000000) {
+        return $terbilang(floor($nilai / 1000000)) . ' juta ' . $terbilang($nilai % 1000000);
+        }
+
+        if ($nilai < 1000000000000) {
+        return $terbilang(floor($nilai / 1000000000)) . ' miliar ' . $terbilang($nilai % 1000000000);
+        }
+
+        return $terbilang(floor($nilai / 1000000000000)) . ' triliun ' . $terbilang($nilai % 1000000000000);
+        };
+
+        $bersihkanTerbilang=function ($teks) {
+        $teks=trim(preg_replace('/\s+/', ' ' , $teks));
+        return $teks==='' ? 'nol' : $teks;
+        };
+
+        $terbilangTotal=$bersihkanTerbilang($terbilang(round($pembelian->total_akhir))) . ' rupiah';
+
+        $invoiceFileBase = 'Nota-Pembelian-' . preg_replace('/[^A-Za-z0-9\-_]+/', '-', $pembelian->nomor_pembelian ?? 'nota');
+        $invoiceFileBase = trim(preg_replace('/-+/', '-', $invoiceFileBase), '-');
+        @endphp
+
+        <style>
+            :root {
+                --invoice-primary: #1e3a8a;
+                --invoice-primary-soft: #eff6ff;
+                --invoice-secondary: #0f172a;
+                --invoice-muted: #64748b;
+                --invoice-line: #cbd5e1;
+                --invoice-light-line: #dbeafe;
+                --stamp-red: #b91c1c;
             }
 
-            html,
-            body {
-                width: 80mm;
-                margin: 0 !important;
-                padding: 0 !important;
-                background: #ffffff !important;
-                font-size: 10px !important;
-                color: #000000 !important;
+            .invoice-copy {
+                border: none;
+                padding: 12px;
+                background: #ffffff;
+                margin-bottom: 12px;
             }
 
-            nav,
-            header,
-            .no-print {
-                display: none !important;
+            .invoice-copy-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                border-bottom: 2px solid var(--invoice-primary);
+                padding-bottom: 8px;
+                margin-bottom: 8px;
             }
 
-            .print-wrapper {
-                padding: 0 !important;
-                margin: 0 !important;
+            .company-left {
+                display: flex;
+                align-items: center;
+                gap: 10px;
             }
 
-            .print-container {
-                width: 72mm !important;
-                max-width: 72mm !important;
-                margin: 0 auto !important;
-                padding: 0 !important;
+            .logo-placeholder {
+                width: 54px;
+                height: 54px;
+                border: 1.5px dashed var(--invoice-primary);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--invoice-primary);
+                font-size: 10px;
+                text-align: center;
+                flex-shrink: 0;
+                background: var(--invoice-primary-soft);
             }
 
-            .invoice-box {
-                width: 72mm !important;
-                max-width: 72mm !important;
-                box-shadow: none !important;
-                border-radius: 0 !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                background: #ffffff !important;
+            .company-name {
+                font-size: 18px;
+                font-weight: 800;
+                letter-spacing: 0.4px;
+                color: var(--invoice-secondary);
+                line-height: 1.1;
+            }
+
+            .company-info {
+                font-size: 11px;
+                color: var(--invoice-muted);
+                margin-top: 2px;
+                line-height: 1.25;
+            }
+
+            .copy-label {
+                border: 1px solid var(--invoice-primary);
+                color: var(--invoice-primary);
+                background: var(--invoice-primary-soft);
+                border-radius: 999px;
+                padding: 4px 10px;
+                font-size: 10px;
+                font-weight: 800;
+                white-space: nowrap;
+            }
+
+            .invoice-title-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                margin-bottom: 8px;
             }
 
             .invoice-title {
-                font-size: 16px !important;
-                text-align: center !important;
-                margin-bottom: 2px !important;
+                font-size: 15px;
+                font-weight: 800;
+                color: var(--invoice-secondary);
             }
 
             .invoice-number {
-                text-align: center !important;
-                font-size: 10px !important;
-                margin-bottom: 8px !important;
+                font-size: 12px;
+                font-weight: 700;
+                color: var(--invoice-primary);
             }
 
-            .section-title {
-                font-size: 11px !important;
-                font-weight: bold !important;
-                margin-top: 8px !important;
-                margin-bottom: 4px !important;
-                border-top: 1px dashed #000 !important;
-                padding-top: 5px !important;
+            .invoice-quick-info {
+                text-align: right;
+                font-size: 11px;
+                color: var(--invoice-secondary);
+                line-height: 1.35;
             }
 
-            .print-grid {
-                display: block !important;
+            .info-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 14px;
+                margin-bottom: 8px;
             }
 
-            .print-grid>div {
-                margin-bottom: 6px !important;
+            .invoice-section-title {
+                font-size: 12px;
+                font-weight: 800;
+                margin-bottom: 4px;
+                color: var(--invoice-primary);
+                border-bottom: 1px solid var(--invoice-line);
+                padding-bottom: 2px;
             }
 
-            table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-                font-size: 9px !important;
+            .info-table {
+                width: 100%;
+                font-size: 11px;
+                color: var(--invoice-secondary);
             }
 
-            th,
-            td {
-                padding: 2px 1px !important;
-                border: none !important;
-                vertical-align: top !important;
+            .info-table td {
+                padding: 1px 0;
+                vertical-align: top;
             }
 
-            .table-barang th,
-            .table-barang td {
-                border-bottom: 1px dashed #999 !important;
+            .items-title-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                margin-top: 2px;
+                margin-bottom: 3px;
             }
 
-            .hide-print {
-                display: none !important;
+            .items-table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 11px;
+                color: var(--invoice-secondary);
             }
 
-            .text-print-right {
-                text-align: right !important;
+            .items-table thead th {
+                background: var(--invoice-primary-soft);
+                color: var(--invoice-secondary);
+                border-top: 1.5px solid var(--invoice-primary);
+                border-bottom: 1px solid var(--invoice-primary);
+                border-left: 1px solid var(--invoice-line);
+                border-right: 1px solid var(--invoice-line);
+                padding: 5px 4px;
+                font-weight: 800;
             }
 
-            .summary-box,
-            .catatan-box,
-            .status-box {
-                border: none !important;
-                background: #ffffff !important;
-                padding: 0 !important;
-                border-radius: 0 !important;
+            .items-table thead th:first-child {
+                border-left: none;
             }
 
-            .summary-row {
-                display: flex !important;
-                justify-content: space-between !important;
-                gap: 6px !important;
-                margin-bottom: 3px !important;
-                font-size: 10px !important;
+            .items-table thead th:last-child {
+                border-right: none;
             }
 
-            .summary-total {
-                border-top: 1px dashed #000 !important;
-                padding-top: 5px !important;
-                margin-top: 5px !important;
-                font-size: 12px !important;
-                font-weight: bold !important;
+            .items-table tbody td {
+                border-bottom: 1px solid var(--invoice-line);
+                border-left: 1px solid var(--invoice-light-line);
+                border-right: 1px solid var(--invoice-light-line);
+                padding: 5px 4px;
+                vertical-align: top;
+            }
+
+            .items-table tbody td:first-child {
+                border-left: none;
+            }
+
+            .items-table tbody td:last-child {
+                border-right: none;
+            }
+
+            .items-table tbody tr:last-child td {
+                border-bottom: 1.5px solid var(--invoice-primary);
+            }
+
+            .item-name {
+                font-weight: 800;
+                color: var(--invoice-secondary);
+            }
+
+            .item-formula {
+                color: var(--invoice-muted);
+                font-size: 10px;
+                margin-top: 1px;
+            }
+
+            .total-inline-wrapper {
+                display: flex;
+                justify-content: flex-end;
+                margin-top: 5px;
+                margin-bottom: 6px;
+            }
+
+            .total-inline {
+                width: 250px;
+                max-width: 100%;
+                font-size: 11px;
+                color: var(--invoice-secondary);
+            }
+
+            .total-inline-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 2px 0;
+            }
+
+            .total-inline-row span:first-child {
+                white-space: nowrap;
+            }
+
+            .total-inline-total {
+                border-top: 1.5px solid var(--invoice-primary);
+                margin-top: 3px;
+                padding-top: 4px;
+                font-size: 12px;
+                font-weight: 900;
+                color: var(--invoice-primary);
             }
 
             .pajak-note {
-                font-size: 9px !important;
-                color: #000000 !important;
-                margin-bottom: 4px !important;
-                font-style: italic !important;
+                font-size: 10px;
+                color: var(--invoice-muted);
+                text-align: right;
+                margin-top: 1px;
             }
 
-            .footer-print {
-                display: block !important;
-                margin-top: 10px !important;
-                text-align: center !important;
-                font-size: 9px !important;
-                border-top: 1px dashed #000 !important;
-                padding-top: 6px !important;
+            .bottom-info-area {
+                display: grid;
+                grid-template-columns: 1.35fr 0.65fr;
+                gap: 20px;
+                margin-top: 6px;
             }
-        }
 
-        .footer-print {
-            display: none;
-        }
-    </style>
+            .terbilang-box {
+                font-size: 11px;
+                color: var(--invoice-secondary);
+                line-height: 1.35;
+                padding-top: 2px;
+            }
 
-    <x-slot name="header">
-        <div class="flex justify-between items-center no-print">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Detail Nota Pembelian
-            </h2>
+            .terbilang-label {
+                font-weight: 800;
+                color: var(--invoice-primary);
+            }
 
-            <div class="flex gap-2">
-                <a href="{{ route('pembelian.exportExcel', $pembelian->id_pembelian) }}"
-                    class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
-                    Export Excel
-                </a>
+            .terbilang-text {
+                font-style: italic;
+                color: var(--invoice-secondary);
+            }
 
-                <button onclick="window.print()"
-                    class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900">
-                    Cetak Nota Pembelian
-                </button>
-            </div>
-        </div>
-    </x-slot>
+            .signature-area {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin-top: 8px;
+                font-size: 11px;
+                text-align: center;
+                color: var(--invoice-secondary);
+            }
 
-    <div class="py-6 print-wrapper">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 print-container">
+            .signature-box {
+                position: relative;
+                min-height: 72px;
+            }
 
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 invoice-box">
+            .signature-name {
+                margin-top: 42px;
+                padding-top: 3px;
+                position: relative;
+                z-index: 2;
+                font-weight: 700;
+            }
 
-                <div class="border-b pb-4 mb-6">
-                    <h1 class="text-2xl font-bold invoice-title">NOTA PEMBELIAN</h1>
-                    <p class="text-gray-600 invoice-number">
-                        {{ $pembelian->nomor_pembelian }}
-                    </p>
+            .company-signature-box {
+                position: relative;
+                overflow: visible;
+            }
+
+            .company-signature-label {
+                position: relative;
+                z-index: 2;
+                font-weight: 700;
+            }
+
+            .copy-divider {
+                border-top: 1.5px dashed var(--invoice-muted);
+                margin: 8px 0 12px;
+                position: relative;
+            }
+
+            .copy-divider span {
+                position: absolute;
+                top: -9px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: #ffffff;
+                padding: 0 8px;
+                font-size: 10px;
+                color: var(--invoice-muted);
+            }
+
+            .stempel-manual {
+                position: absolute;
+                left: 50%;
+                top: 2px;
+                width: 230px;
+                max-width: 100%;
+                padding: 9px 14px;
+                border: 2px double var(--stamp-red);
+                color: var(--stamp-red);
+                background: rgba(255, 255, 255, 0.35);
+                text-align: center;
+                font-family: "Times New Roman", serif;
+                transform: translateX(-50%) rotate(-7deg);
+                box-sizing: border-box;
+                opacity: 0.90;
+                z-index: 8;
+                pointer-events: none;
+            }
+
+            .stempel-manual::before {
+                content: "";
+                position: absolute;
+                inset: 4px;
+                border: 1px solid var(--stamp-red);
+                pointer-events: none;
+            }
+
+            .stempel-manual::after {
+                content: "STEMPEL";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%) rotate(-8deg);
+                font-size: 24px;
+                font-weight: 800;
+                letter-spacing: 2px;
+                color: rgba(185, 28, 28, 0.13);
+                white-space: nowrap;
+                pointer-events: none;
+            }
+
+            .stempel-content {
+                position: relative;
+                z-index: 2;
+            }
+
+            .stempel-company {
+                font-size: 14px;
+                font-weight: 800;
+                line-height: 1.1;
+            }
+
+            .stempel-bank {
+                font-size: 12px;
+                font-weight: 700;
+                line-height: 1.2;
+                margin-bottom: 5px;
+            }
+
+            .stempel-bank:last-child {
+                margin-bottom: 0;
+            }
+
+            .stempel-separator {
+                width: 70%;
+                border-top: 1px dashed var(--stamp-red);
+                margin: 5px auto;
+            }
+
+            @media print {
+                @page {
+                    size: A4 portrait;
+                    margin: 6mm;
+                }
+
+                html,
+                body {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    -webkit-print-color-adjust: exact !important;
+                    print-color-adjust: exact !important;
+                }
+
+                nav,
+                header,
+                .no-print {
+                    display: none !important;
+                }
+
+                .print-wrapper,
+                .print-container,
+                .invoice-box {
+                    padding: 0 !important;
+                    margin: 0 !important;
+                    width: 100% !important;
+                    max-width: 100% !important;
+                    box-shadow: none !important;
+                    border-radius: 0 !important;
+                    background: #ffffff !important;
+                }
+
+                .invoice-copy {
+                    min-height: 134mm !important;
+                    max-height: none !important;
+                    overflow: visible !important;
+                    border: none !important;
+                    padding: 4mm !important;
+                    margin: 0 !important;
+                    box-sizing: border-box !important;
+                    page-break-inside: avoid !important;
+                    break-inside: avoid !important;
+                }
+
+                .copy-divider {
+                    margin: 2.5mm 0 !important;
+                    border-top: 1px dashed #64748b !important;
+                }
+
+                .copy-divider span {
+                    top: -6px !important;
+                    font-size: 7px !important;
+                    color: #64748b !important;
+                }
+
+                .invoice-copy-header {
+                    padding-bottom: 3px !important;
+                    margin-bottom: 4px !important;
+                    border-bottom: 1.2px solid var(--invoice-primary) !important;
+                }
+
+                .logo-placeholder {
+                    width: 34px !important;
+                    height: 34px !important;
+                    font-size: 7px !important;
+                    border-color: var(--invoice-primary) !important;
+                    color: var(--invoice-primary) !important;
+                    border-radius: 4px !important;
+                    background: var(--invoice-primary-soft) !important;
+                }
+
+                .company-name {
+                    font-size: 12px !important;
+                    line-height: 1.05 !important;
+                    color: #0f172a !important;
+                }
+
+                .company-info {
+                    font-size: 7.5px !important;
+                    color: #334155 !important;
+                    line-height: 1.15 !important;
+                }
+
+                .copy-label {
+                    font-size: 7.5px !important;
+                    padding: 2px 6px !important;
+                    border-color: var(--invoice-primary) !important;
+                    color: var(--invoice-primary) !important;
+                    background: var(--invoice-primary-soft) !important;
+                }
+
+                .invoice-title-row {
+                    margin-bottom: 3px !important;
+                }
+
+                .invoice-title {
+                    font-size: 10px !important;
+                }
+
+                .invoice-number {
+                    font-size: 8.5px !important;
+                }
+
+                .invoice-quick-info {
+                    font-size: 8px !important;
+                    line-height: 1.2 !important;
+                }
+
+                .info-grid {
+                    display: grid !important;
+                    grid-template-columns: 1fr 1fr !important;
+                    gap: 10px !important;
+                    margin-bottom: 4px !important;
+                }
+
+                .invoice-section-title {
+                    font-size: 8.5px !important;
+                    margin-bottom: 2px !important;
+                    padding-bottom: 1px !important;
+                    color: var(--invoice-primary) !important;
+                    border-bottom: 1px solid #cbd5e1 !important;
+                }
+
+                .info-table {
+                    font-size: 7.8px !important;
+                    line-height: 1.15 !important;
+                }
+
+                .info-table td {
+                    padding: 0 !important;
+                }
+
+                .items-title-row {
+                    margin-top: 1px !important;
+                    margin-bottom: 1px !important;
+                }
+
+                .items-table {
+                    font-size: 7.5px !important;
+                    line-height: 1.15 !important;
+                    border-collapse: collapse !important;
+                }
+
+                .items-table thead th {
+                    padding: 1.5px 2px !important;
+                    border-top: 1.2px solid var(--invoice-primary) !important;
+                    border-bottom: 1px solid var(--invoice-primary) !important;
+                    border-left: 1px solid #cbd5e1 !important;
+                    border-right: 1px solid #cbd5e1 !important;
+                    background: var(--invoice-primary-soft) !important;
+                    color: #0f172a !important;
+                }
+
+                .items-table tbody td {
+                    padding: 1.5px 2px !important;
+                    border-bottom: 1px solid #cbd5e1 !important;
+                    border-left: 1px solid #dbeafe !important;
+                    border-right: 1px solid #dbeafe !important;
+                }
+
+                .item-formula {
+                    font-size: 7px !important;
+                    line-height: 1.1 !important;
+                }
+
+                .total-inline-wrapper {
+                    margin-top: 2px !important;
+                    margin-bottom: 3px !important;
+                }
+
+                .total-inline {
+                    width: 210px !important;
+                    font-size: 7.8px !important;
+                }
+
+                .total-inline-row {
+                    padding: 0.5px 0 !important;
+                }
+
+                .total-inline-total {
+                    font-size: 8.8px !important;
+                    margin-top: 1px !important;
+                    padding-top: 2px !important;
+                }
+
+                .pajak-note {
+                    font-size: 7px !important;
+                    margin-top: 0 !important;
+                }
+
+                .bottom-info-area {
+                    grid-template-columns: 1.35fr 0.65fr !important;
+                    gap: 12px !important;
+                    margin-top: 2px !important;
+                }
+
+                .terbilang-box {
+                    font-size: 7.8px !important;
+                    line-height: 1.15 !important;
+                    padding-top: 0 !important;
+                }
+
+                .signature-area {
+                    margin-top: 3px !important;
+                    gap: 12px !important;
+                    font-size: 7.8px !important;
+                }
+
+                .signature-box {
+                    min-height: 48px !important;
+                }
+
+                .signature-name {
+                    margin-top: 28px !important;
+                    padding-top: 1px !important;
+                }
+
+                .stempel-manual {
+                    top: -1px !important;
+                    width: 168px !important;
+                    padding: 5px 8px !important;
+                    border: 1.5px double var(--stamp-red) !important;
+                    color: var(--stamp-red) !important;
+                    background: rgba(255, 255, 255, 0.25) !important;
+                    transform: translateX(-50%) rotate(-7deg) !important;
+                    opacity: 0.95 !important;
+                    z-index: 8 !important;
+                }
+
+                .stempel-manual::before {
+                    inset: 3px !important;
+                    border: 1px solid var(--stamp-red) !important;
+                }
+
+                .stempel-manual::after {
+                    font-size: 16px !important;
+                    letter-spacing: 1px !important;
+                    color: rgba(185, 28, 28, 0.10) !important;
+                }
+
+                .stempel-company {
+                    font-size: 9px !important;
+                    line-height: 1.05 !important;
+                }
+
+                .stempel-bank {
+                    font-size: 7.8px !important;
+                    line-height: 1.08 !important;
+                    margin-bottom: 2px !important;
+                }
+
+                .stempel-separator {
+                    margin: 2px auto !important;
+                    border-top: 1px dashed var(--stamp-red) !important;
+                }
+            }
+        </style>
+
+        <x-slot name="header">
+            <div class="flex justify-between items-center no-print">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Detail Invoice Pembelian
+                </h2>
+
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('pembelian.exportExcel', $pembelian->id_pembelian) }}"
+                        class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
+                        Export Excel
+                    </a>
+
+                    <a href="{{ route('pembelian.deliveryOrder', $pembelian->id_pembelian) }}"
+                        target="_blank"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                        Cetak DO Supplier
+                    </a>
+
+                    <a href="{{ route('pembelian.suratJalan', $pembelian->id_pembelian) }}"
+                        target="_blank"
+                        class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
+                        Cetak Surat Jalan Supplier
+                    </a>
+
+                    <button onclick="cetakInvoiceA4()"
+                        class="px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-900">
+                        Cetak / Download PDF A4
+                    </button>
                 </div>
+            </div>
+        </x-slot>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 print-grid">
-                    <div>
-                        <h3 class="font-semibold text-lg mb-3 section-title">
-                            Informasi Supplier
-                        </h3>
+        <div class="py-6 print-wrapper">
+            <div class="max-w-5xl mx-auto sm:px-6 lg:px-8 print-container">
 
-                        <table class="w-full">
-                            <tr>
-                                <td class="py-1 font-medium">Nama</td>
-                                <td class="py-1">
-                                    : {{ $pembelian->supplier->nama_supplier ?? '-' }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="py-1 font-medium">Telepon</td>
-                                <td class="py-1">
-                                    : {{ $pembelian->supplier->nomor_telepon ?? '-' }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="py-1 font-medium">Alamat</td>
-                                <td class="py-1">
-                                    : {{ $pembelian->supplier->alamat ?? '-' }}
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 invoice-box">
 
-                    <div>
-                        <h3 class="font-semibold text-lg mb-3 section-title">
-                            Informasi Pembelian
-                        </h3>
+                    @foreach (['SUPPLIER', 'ARSIP PERUSAHAAN'] as $copyIndex => $copyLabel)
+                    <div class="invoice-copy">
+                        <div class="invoice-copy-header">
+                            <div class="company-left">
+                                <div class="logo-placeholder">
+                                    LOGO
+                                </div>
 
-                        <table class="w-full">
-                            <tr>
-                                <td class="py-1 font-medium">Tanggal</td>
-                                <td class="py-1">
-                                    : {{ $pembelian->tanggal_pembelian->format('d-m-Y') }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="py-1 font-medium">Status</td>
-                                <td class="py-1">
-                                    :
+                                <div>
+                                    <div class="company-name">
+                                        {{ $namaPerusahaan }}
+                                    </div>
+                                    <div class="company-info">
+                                        {{ $alamatPerusahaan }}<br>
+                                        Telp: {{ $teleponPerusahaan }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="copy-label">
+                                {{ $copyLabel }}
+                            </div>
+                        </div>
+
+                        <div class="invoice-title-row">
+                            <div>
+                                <div class="invoice-title">
+                                    INVOICE / NOTA PEMBELIAN
+                                </div>
+                                <div class="invoice-number">
+                                    No: {{ $pembelian->nomor_pembelian }}
+                                </div>
+                            </div>
+
+                            <div class="invoice-quick-info">
+                                <div>
+                                    <strong>Tanggal:</strong>
+                                    {{ $pembelian->tanggal_pembelian ? $pembelian->tanggal_pembelian->format('d-m-Y') : '-' }}
+                                </div>
+                                <div>
+                                    <strong>Status Terima:</strong>
                                     @if ($statusPenerimaan === 'lengkap')
                                     Lengkap
                                     @elseif ($statusPenerimaan === 'sebagian')
@@ -235,157 +804,240 @@
                                     @else
                                     Belum Dikirim
                                     @endif
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="py-1 font-medium">Admin</td>
-                                <td class="py-1">
-                                    : {{ $pembelian->user->nama_user ?? '-' }}
-                                </td>
-                            </tr>
+                                </div>
+                                <div>
+                                    <strong>Admin:</strong>
+                                    {{ $pembelian->user->nama_user ?? '-' }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-grid">
+                            <div>
+                                <div class="invoice-section-title">
+                                    Informasi Supplier
+                                </div>
+
+                                <table class="info-table">
+                                    <tr>
+                                        <td style="width: 70px;">Nama</td>
+                                        <td>: {{ $pembelian->supplier->nama_supplier ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Telepon</td>
+                                        <td>: {{ $pembelian->supplier->nomor_telepon ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>NPWP</td>
+                                        <td>: {{ $pembelian->supplier->npwp ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Alamat</td>
+                                        <td>: {{ $pembelian->supplier->alamat ?? '-' }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <div>
+                                <div class="invoice-section-title">
+                                    Informasi Dokumen
+                                </div>
+
+                                <table class="info-table">
+                                    <tr>
+                                        <td style="width: 90px;">No. DO</td>
+                                        <td>: {{ $pembelian->nomor_delivery_order ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>No. Surat Jalan</td>
+                                        <td>: {{ $pembelian->nomor_surat_jalan ?? '-' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Catatan</td>
+                                        <td>: {{ $pembelian->catatan ?? '-' }}</td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="items-title-row">
+                            <div class="invoice-section-title" style="width: 100%; margin-bottom: 0;">
+                                Daftar Barang Dibeli
+                            </div>
+                        </div>
+
+                        <table class="items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 24px;" class="text-center">No</th>
+                                    <th>Barang</th>
+                                    <th style="width: 58px;" class="text-right">Dipesan</th>
+                                    <th style="width: 58px;" class="text-right">Diterima</th>
+                                    <th style="width: 58px;" class="text-right">Sisa</th>
+                                    <th style="width: 78px;" class="text-right">Harga</th>
+                                    <th style="width: 88px;" class="text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                @foreach ($pembelian->detailPembelian as $detail)
+                                @php
+                                $jumlahDipesan = $detail->jumlah_dipesan ?? $detail->jumlah;
+                                $jumlahDiterima = $detail->jumlah;
+                                $sisaBelumDikirim = max($jumlahDipesan - $jumlahDiterima, 0);
+                                $satuan = $detail->barang->satuan ?? '';
+                                @endphp
+
+                                <tr>
+                                    <td class="text-center">
+                                        {{ $loop->iteration }}
+                                    </td>
+
+                                    <td>
+                                        <div class="item-name">
+                                            {{ $detail->barang->nama_barang ?? '-' }}
+                                        </div>
+
+                                        <div class="item-formula">
+                                            Kode: {{ $detail->barang->kode_barang ?? '-' }}
+                                        </div>
+                                    </td>
+
+                                    <td class="text-right">
+                                        {{ $formatAngkaInvoice($jumlahDipesan) }} {{ strtoupper($satuan) }}
+                                    </td>
+
+                                    <td class="text-right">
+                                        {{ $formatAngkaInvoice($jumlahDiterima) }} {{ strtoupper($satuan) }}
+                                    </td>
+
+                                    <td class="text-right">
+                                        {{ $formatAngkaInvoice($sisaBelumDikirim) }} {{ strtoupper($satuan) }}
+                                    </td>
+
+                                    <td class="text-right">
+                                        Rp {{ number_format($detail->harga_beli, 0, ',', '.') }}
+                                    </td>
+
+                                    <td class="text-right">
+                                        Rp {{ number_format($detail->subtotal, 0, ',', '.') }}
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
                         </table>
-                    </div>
-                </div>
 
-                <h3 class="font-semibold text-lg mb-3 section-title">
-                    Daftar Barang Dibeli
-                </h3>
+                        <div class="total-inline-wrapper">
+                            <div class="total-inline">
+                                <div class="total-inline-row">
+                                    <span>Subtotal Diterima</span>
+                                    <strong>
+                                        Rp {{ number_format($pembelian->subtotal, 0, ',', '.') }}
+                                    </strong>
+                                </div>
 
-                <div class="overflow-x-auto mb-6">
-                    <table class="min-w-full border border-gray-200 table-barang">
-                        <thead class="bg-gray-100">
-                            <tr>
-                                <th class="border px-3 py-2 text-left">No</th>
-                                <th class="border px-3 py-2 text-left hide-print">Kode</th>
-                                <th class="border px-3 py-2 text-left">Barang</th>
-                                <th class="border px-3 py-2 text-right hide-print">Dipesan</th>
-                                <th class="border px-3 py-2 text-right">Diterima</th>
-                                <th class="border px-3 py-2 text-right hide-print">Sisa</th>
-                                <th class="border px-3 py-2 text-right">Harga</th>
-                                <th class="border px-3 py-2 text-right">Subtotal</th>
-                            </tr>
-                        </thead>
+                                <div class="total-inline-row">
+                                    <span>Pajak {{ number_format($pembelian->persentase_pajak, 2, ',', '.') }}%</span>
+                                    <strong>
+                                        Rp {{ number_format($pembelian->nilai_pajak, 0, ',', '.') }}
+                                    </strong>
+                                </div>
 
-                        <tbody>
-                            @foreach ($pembelian->detailPembelian as $detail)
-                            @php
-                            $jumlahDipesan = $detail->jumlah_dipesan ?? $detail->jumlah;
-                            $jumlahDiterima = $detail->jumlah;
-                            $sisaBelumDikirim = max($jumlahDipesan - $jumlahDiterima, 0);
-                            @endphp
+                                @if (!$pajakDitambahkan)
+                                <div class="pajak-note">
+                                    Pajak ditampilkan saja
+                                </div>
+                                @endif
 
-                            <tr>
-                                <td class="border px-3 py-2">
-                                    {{ $loop->iteration }}
-                                </td>
-
-                                <td class="border px-3 py-2 hide-print">
-                                    {{ $detail->barang->kode_barang ?? '-' }}
-                                </td>
-
-                                <td class="border px-3 py-2">
-                                    {{ $detail->barang->nama_barang ?? '-' }}
-                                </td>
-
-                                <td class="border px-3 py-2 text-right text-print-right hide-print">
-                                    {{ $jumlahDipesan }}
-                                </td>
-
-                                <td class="border px-3 py-2 text-right text-print-right">
-                                    {{ $jumlahDiterima }}
-                                </td>
-
-                                <td class="border px-3 py-2 text-right text-print-right hide-print">
-                                    {{ $sisaBelumDikirim }}
-                                </td>
-
-                                <td class="border px-3 py-2 text-right text-print-right">
-                                    Rp {{ number_format($detail->harga_beli, 0, ',', '.') }}
-                                </td>
-
-                                <td class="border px-3 py-2 text-right text-print-right">
-                                    Rp {{ number_format($detail->subtotal, 0, ',', '.') }}
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 print-grid">
-                    <div>
-                        <h3 class="font-semibold text-lg mb-3 section-title">
-                            Catatan
-                        </h3>
-
-                        <p class="border rounded-md p-4 bg-gray-50 catatan-box">
-                            {{ $pembelian->catatan ?? '-' }}
-                        </p>
-
-                        @if ($statusPenerimaan === 'sebagian')
-                        <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800 status-box">
-                            Sebagian barang belum dikirim oleh supplier. Stok hanya bertambah sesuai jumlah barang yang sudah diterima.
+                                <div class="total-inline-row total-inline-total">
+                                    <span>Total Akhir</span>
+                                    <strong>
+                                        Rp {{ number_format($pembelian->total_akhir, 0, ',', '.') }}
+                                    </strong>
+                                </div>
+                            </div>
                         </div>
-                        @endif
-                    </div>
 
-                    <div>
-                        <h3 class="font-semibold text-lg mb-3 section-title">
-                            Ringkasan Total
-                        </h3>
-
-                        <div class="bg-gray-50 border rounded-md p-4 summary-box">
-                            <div class="flex justify-between mb-2 summary-row">
-                                <span>Subtotal Diterima</span>
-                                <strong>
-                                    Rp {{ number_format($pembelian->subtotal, 0, ',', '.') }}
-                                </strong>
+                        <div class="bottom-info-area">
+                            <div class="terbilang-box">
+                                <span class="terbilang-label">Terbilang :</span>
+                                <span class="terbilang-text">{{ $terbilangTotal }}</span>
                             </div>
 
-                            <div class="flex justify-between mb-2 summary-row">
-                                <span>
-                                    Pajak {{ number_format($pembelian->persentase_pajak, 2, ',', '.') }}%
+                            <div></div>
+                        </div>
 
-                                    @if (!$pajakDitambahkan)
-                                    <small class="text-gray-500">
-                                        (ditampilkan saja)
-                                    </small>
-                                    @endif
-                                </span>
-
-                                <strong>
-                                    Rp {{ number_format($pembelian->nilai_pajak, 0, ',', '.') }}
-                                </strong>
+                        <div class="signature-area">
+                            <div class="signature-box">
+                                <div>Supplier,</div>
+                                <div class="signature-name">
+                                    {{ $pembelian->supplier->nama_supplier ?? 'Supplier' }}
+                                </div>
                             </div>
 
-                            @if (!$pajakDitambahkan)
-                            <div class="mb-2 text-sm text-gray-500 pajak-note">
-                                Pajak tidak ditambahkan ke total akhir.
-                            </div>
-                            @endif
+                            <div class="signature-box company-signature-box">
+                                <div class="company-signature-label">Diterima Oleh,</div>
 
-                            <div class="flex justify-between border-t pt-2 text-lg summary-total">
-                                <span>Total Akhir</span>
-                                <strong>
-                                    Rp {{ number_format($pembelian->total_akhir, 0, ',', '.') }}
-                                </strong>
+                                <div class="stempel-manual">
+                                    <div class="stempel-content">
+                                        <div class="stempel-company">Berkat</div>
+                                        <div class="stempel-bank">BCA : 5280902227</div>
+
+                                        <div class="stempel-separator"></div>
+
+                                        <div class="stempel-company">Berkat</div>
+                                        <div class="stempel-bank">OCBC NISP : 565 8000 15150</div>
+                                    </div>
+                                </div>
+
+                                <div class="signature-name">
+                                    {{ $namaPerusahaan }}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="footer-print">
-                    Nota pembelian ini dibuat oleh sistem Berkat Jaya Nusantara.
-                </div>
+                    @if ($copyIndex === 0)
+                    <div class="copy-divider">
+                        <span>potong / arsip</span>
+                    </div>
+                    @endif
+                    @endforeach
 
-                <div class="flex justify-end mt-6 no-print">
-                    <a href="{{ $backUrl }}"
-                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
-                        Kembali
-                    </a>
-                </div>
+                    <div class="flex justify-end mt-6 no-print">
+                        <a href="{{ $backUrl }}"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">
+                            Kembali
+                        </a>
+                    </div>
 
+                </div>
             </div>
         </div>
-    </div>
+
+        <script>
+            const invoicePrintTitle = "{{ $invoiceFileBase }}";
+            let previousDocumentTitle = document.title;
+
+            function cetakInvoiceA4() {
+                previousDocumentTitle = document.title;
+                document.title = invoicePrintTitle;
+                window.print();
+
+                setTimeout(function() {
+                    document.title = previousDocumentTitle;
+                }, 1500);
+            }
+
+            window.addEventListener('beforeprint', function() {
+                previousDocumentTitle = document.title;
+                document.title = invoicePrintTitle;
+            });
+
+            window.addEventListener('afterprint', function() {
+                setTimeout(function() {
+                    document.title = previousDocumentTitle;
+                }, 500);
+            });
+        </script>
 </x-app-layout>

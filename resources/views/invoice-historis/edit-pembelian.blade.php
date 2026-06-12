@@ -17,17 +17,19 @@
     ];
     }
     } else {
+    foreach ($pembelian->detailPembelian as $detail) {
     $rows[] = [
-    'id_barang' => '',
-    'jumlah' => 1,
-    'harga_beli' => 0,
+    'id_barang' => $detail->id_barang,
+    'jumlah' => $detail->jumlah,
+    'harga_beli' => $detail->harga_beli,
     ];
+    }
     }
     @endphp
 
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Input Invoice Pembelian Lama
+            Edit Invoice Pembelian Lama
         </h2>
     </x-slot>
 
@@ -36,7 +38,7 @@
 
             <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md">
                 <strong>Catatan:</strong>
-                Invoice pembelian lama akan disimpan sebagai data historis dan tidak akan menambah stok barang.
+                Invoice pembelian lama adalah data historis. Perubahan data ini tidak akan menambah atau mengurangi stok barang.
             </div>
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
@@ -55,19 +57,20 @@
                 </div>
                 @endif
 
-                <form action="{{ route('invoice-historis.pembelian.store') }}" method="POST" id="formPembelianHistoris">
+                <form action="{{ route('invoice-historis.pembelian.update', $pembelian->id_pembelian) }}" method="POST" id="formPembelianHistoris">
                     @csrf
+                    @method('PUT')
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <div>
                             <label class="block mb-1 font-medium">Nomor Sistem</label>
                             <input type="text"
-                                value="{{ $nomorPembelian }}"
+                                value="{{ $pembelian->nomor_pembelian }}"
                                 class="w-full border-gray-300 rounded-md shadow-sm bg-gray-100"
                                 readonly>
 
                             <p class="text-sm text-gray-500 mt-1">
-                                Nomor sistem dibuat otomatis.
+                                Nomor sistem historis tidak diubah.
                             </p>
                         </div>
 
@@ -77,7 +80,7 @@
                             </label>
                             <input type="text"
                                 name="nomor_dokumen_asli"
-                                value="{{ old('nomor_dokumen_asli') }}"
+                                value="{{ old('nomor_dokumen_asli', $pembelian->nomor_dokumen_asli) }}"
                                 placeholder="Contoh: NOTA-001 / INV lama"
                                 class="w-full border-gray-300 rounded-md shadow-sm"
                                 required>
@@ -91,7 +94,7 @@
                             <label class="block mb-1 font-medium">Tanggal Pembelian Lama</label>
                             <input type="date"
                                 name="tanggal_pembelian"
-                                value="{{ old('tanggal_pembelian') }}"
+                                value="{{ old('tanggal_pembelian', $pembelian->tanggal_pembelian ? $pembelian->tanggal_pembelian->format('Y-m-d') : '') }}"
                                 class="w-full border-gray-300 rounded-md shadow-sm"
                                 required>
                         </div>
@@ -107,7 +110,7 @@
 
                                 @foreach ($suppliers as $supplier)
                                 <option value="{{ $supplier->id_supplier }}"
-                                    {{ old('id_supplier') == $supplier->id_supplier ? 'selected' : '' }}>
+                                    {{ old('id_supplier', $pembelian->id_supplier) == $supplier->id_supplier ? 'selected' : '' }}>
                                     {{ $supplier->kode_supplier }} - {{ $supplier->nama_supplier }}
 
                                     @if ($supplier->nomor_telepon)
@@ -285,7 +288,7 @@
                             <label class="block mb-1 font-medium">Catatan</label>
                             <textarea name="catatan"
                                 rows="4"
-                                class="w-full border-gray-300 rounded-md shadow-sm">{{ old('catatan') }}</textarea>
+                                class="w-full border-gray-300 rounded-md shadow-sm">{{ old('catatan', $pembelian->catatan) }}</textarea>
                         </div>
 
                         <div class="bg-gray-50 p-4 rounded-md border">
@@ -294,7 +297,7 @@
                                 <input type="number"
                                     name="persentase_pajak"
                                     id="persentasePajak"
-                                    value="{{ old('persentase_pajak', 0) }}"
+                                    value="{{ old('persentase_pajak', $pembelian->persentase_pajak) }}"
                                     min="0"
                                     max="100"
                                     step="0.01"
@@ -310,7 +313,7 @@
                                             name="pajak_ditambahkan"
                                             value="1"
                                             class="mt-1"
-                                            {{ old('pajak_ditambahkan', '1') == '1' ? 'checked' : '' }}>
+                                            {{ old('pajak_ditambahkan', ($pembelian->pajak_ditambahkan ?? true) ? '1' : '0') == '1' ? 'checked' : '' }}>
 
                                         <span>
                                             <strong>Pajak ditambahkan ke total</strong>
@@ -322,7 +325,7 @@
                                             name="pajak_ditambahkan"
                                             value="0"
                                             class="mt-1"
-                                            {{ old('pajak_ditambahkan') == '0' ? 'checked' : '' }}>
+                                            {{ old('pajak_ditambahkan', ($pembelian->pajak_ditambahkan ?? true) ? '1' : '0') == '0' ? 'checked' : '' }}>
 
                                         <span>
                                             <strong>Pajak hanya ditampilkan</strong>
@@ -356,8 +359,8 @@
 
                         <button type="submit"
                             class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                            onclick="return confirm('Simpan invoice pembelian lama? Data ini tidak akan menambah stok.')">
-                            Simpan Invoice Lama
+                            onclick="return confirm('Update invoice pembelian lama? Data ini tetap tidak akan memengaruhi stok.')">
+                            Update Invoice Lama
                         </button>
                     </div>
                 </form>
@@ -430,7 +433,6 @@
             const select = row.querySelector('.barang-select');
             const selectedOption = getSelectedOption(select);
 
-            const hargaInput = row.querySelector('.harga-input');
             const satuanInfo = row.querySelector('.satuan-info');
             const satuanJumlahInfo = row.querySelector('.satuan-jumlah-info');
 
@@ -440,12 +442,7 @@
                 return;
             }
 
-            const harga = parseFloat(selectedOption.getAttribute('data-harga')) || 0;
             const satuan = selectedOption.getAttribute('data-satuan') || '';
-
-            if (!hargaInput.value || parseFloat(hargaInput.value) === 0) {
-                hargaInput.value = harga;
-            }
 
             satuanInfo.innerText = satuan ? 'Satuan: ' + satuan.toUpperCase() : 'Satuan: -';
             satuanJumlahInfo.innerText = satuan ? satuan.toUpperCase() : '-';

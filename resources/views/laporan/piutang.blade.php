@@ -1,11 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Laporan Piutang
-            </h2>
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Laporan Piutang
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    Laporan piutang dari invoice penjualan sistem berjalan dan invoice penjualan historis.
+                </p>
+            </div>
 
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('laporan.piutang.exportExcel', request()->query()) }}"
                     class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                     Export Excel
@@ -24,7 +29,7 @@
 
             <div class="bg-white shadow-sm sm:rounded-lg p-6 mb-6">
                 <form method="GET" action="{{ route('laporan.piutang') }}">
-                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
                         <div>
                             <label class="block mb-1 font-medium">Jatuh Tempo Awal</label>
                             <input type="date"
@@ -46,6 +51,7 @@
                             <select name="id_customer"
                                 class="w-full border-gray-300 rounded-md shadow-sm">
                                 <option value="">Semua Customer</option>
+
                                 @foreach ($customers as $customer)
                                 <option value="{{ $customer->id_customer }}"
                                     {{ request('id_customer') == $customer->id_customer ? 'selected' : '' }}>
@@ -66,6 +72,9 @@
                                 <option value="sebagian_dibayar" {{ request('status_piutang') === 'sebagian_dibayar' ? 'selected' : '' }}>
                                     Sebagian Dibayar
                                 </option>
+                                <option value="jatuh_tempo" {{ request('status_piutang') === 'jatuh_tempo' ? 'selected' : '' }}>
+                                    Jatuh Tempo
+                                </option>
                                 <option value="lunas" {{ request('status_piutang') === 'lunas' ? 'selected' : '' }}>
                                     Lunas
                                 </option>
@@ -73,7 +82,7 @@
                         </div>
 
                         <div>
-                            <label class="block mb-1 font-medium">Jatuh Tempo</label>
+                            <label class="block mb-1 font-medium">Kondisi Tempo</label>
                             <select name="jatuh_tempo"
                                 class="w-full border-gray-300 rounded-md shadow-sm">
                                 <option value="">Semua</option>
@@ -87,11 +96,25 @@
                         </div>
 
                         <div>
+                            <label class="block mb-1 font-medium">Tipe Invoice</label>
+                            <select name="tipe_invoice"
+                                class="w-full border-gray-300 rounded-md shadow-sm">
+                                <option value="">Semua</option>
+                                <option value="sistem" {{ request('tipe_invoice') === 'sistem' ? 'selected' : '' }}>
+                                    Sistem Berjalan
+                                </option>
+                                <option value="historis" {{ request('tipe_invoice') === 'historis' ? 'selected' : '' }}>
+                                    Historis / Lama
+                                </option>
+                            </select>
+                        </div>
+
+                        <div>
                             <label class="block mb-1 font-medium">Cari</label>
                             <input type="text"
                                 name="search"
                                 value="{{ request('search') }}"
-                                placeholder="Invoice/customer..."
+                                placeholder="Invoice/dokumen/customer..."
                                 class="w-full border-gray-300 rounded-md shadow-sm">
                         </div>
                     </div>
@@ -114,6 +137,9 @@
                 <div class="bg-white shadow-sm rounded-lg p-4">
                     <p class="text-sm text-gray-500">Total Data</p>
                     <p class="text-2xl font-bold">{{ $totalData }}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Sistem: {{ $totalSistemBerjalan ?? 0 }} | Historis: {{ $totalHistoris ?? 0 }}
+                    </p>
                 </div>
 
                 <div class="bg-white shadow-sm rounded-lg p-4">
@@ -125,7 +151,7 @@
 
                 <div class="bg-white shadow-sm rounded-lg p-4">
                     <p class="text-sm text-gray-500">Total Dibayar</p>
-                    <p class="text-2xl font-bold">
+                    <p class="text-2xl font-bold text-blue-700">
                         Rp {{ number_format($totalDibayar, 0, ',', '.') }}
                     </p>
                 </div>
@@ -162,14 +188,16 @@
 
             <div class="bg-white shadow-sm sm:rounded-lg p-6">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full border border-gray-200">
+                    <table class="min-w-full border border-gray-200 text-sm">
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="border px-3 py-2 text-left">No</th>
                                 <th class="border px-3 py-2 text-left">Invoice</th>
                                 <th class="border px-3 py-2 text-left">Customer</th>
+                                <th class="border px-3 py-2 text-left">Tanggal</th>
                                 <th class="border px-3 py-2 text-left">Jatuh Tempo</th>
                                 <th class="border px-3 py-2 text-left">Status</th>
+                                <th class="border px-3 py-2 text-center">Tipe</th>
                                 <th class="border px-3 py-2 text-right">Total Piutang</th>
                                 <th class="border px-3 py-2 text-right">Dibayar</th>
                                 <th class="border px-3 py-2 text-right">Sisa</th>
@@ -181,9 +209,36 @@
                         <tbody>
                             @forelse ($piutang as $item)
                             @php
+                            $isHistoris = (bool) ($item->penjualan->is_historical ?? false);
+
                             $lewatJatuhTempo = $item->status_piutang !== 'lunas'
                             && $item->tanggal_jatuh_tempo
                             && $item->tanggal_jatuh_tempo->isPast();
+
+                            if ($item->status_piutang === 'lunas') {
+                            $statusLabel = 'Lunas';
+                            $statusClass = 'bg-green-100 text-green-700';
+                            } elseif ($item->status_piutang === 'sebagian_dibayar') {
+                            $statusLabel = 'Sebagian Dibayar';
+                            $statusClass = 'bg-blue-100 text-blue-700';
+                            } elseif ($item->status_piutang === 'jatuh_tempo') {
+                            $statusLabel = 'Jatuh Tempo';
+                            $statusClass = 'bg-red-100 text-red-700';
+                            } else {
+                            $statusLabel = 'Belum Lunas';
+                            $statusClass = 'bg-yellow-100 text-yellow-700';
+                            }
+
+                            if ($item->status_piutang === 'lunas') {
+                            $keteranganLabel = 'Selesai';
+                            $keteranganClass = 'text-green-700';
+                            } elseif ($lewatJatuhTempo || $item->status_piutang === 'jatuh_tempo') {
+                            $keteranganLabel = 'Lewat Tempo';
+                            $keteranganClass = 'text-red-700';
+                            } else {
+                            $keteranganLabel = 'Berjalan';
+                            $keteranganClass = 'text-yellow-700';
+                            }
                             @endphp
 
                             <tr class="{{ $lewatJatuhTempo ? 'bg-red-50' : '' }}">
@@ -192,29 +247,55 @@
                                 </td>
 
                                 <td class="border px-3 py-2">
-                                    {{ $item->nomor_invoice }}
+                                    <div class="font-semibold">
+                                        {{ $item->nomor_invoice }}
+                                    </div>
+
+                                    @if ($item->penjualan?->nomor_dokumen_asli)
+                                    <div class="text-xs text-gray-500">
+                                        Dok. Asli: {{ $item->penjualan->nomor_dokumen_asli }}
+                                    </div>
+                                    @endif
                                 </td>
 
                                 <td class="border px-3 py-2">
-                                    {{ $item->customer->nama_customer ?? '-' }}
+                                    <div class="font-medium">
+                                        {{ $item->customer->nama_customer ?? '-' }}
+                                    </div>
+
+                                    <div class="text-xs text-gray-500">
+                                        {{ $item->customer->nomor_telepon ?? '-' }}
+                                    </div>
+
+                                    @if ($item->customer?->npwp)
+                                    <div class="text-xs text-gray-500">
+                                        NPWP: {{ $item->customer->npwp }}
+                                    </div>
+                                    @endif
                                 </td>
 
-                                <td class="border px-3 py-2">
+                                <td class="border px-3 py-2 whitespace-nowrap">
+                                    {{ $item->penjualan?->tanggal_penjualan ? $item->penjualan->tanggal_penjualan->format('d-m-Y') : '-' }}
+                                </td>
+
+                                <td class="border px-3 py-2 whitespace-nowrap">
                                     {{ $item->tanggal_jatuh_tempo ? $item->tanggal_jatuh_tempo->format('d-m-Y') : '-' }}
                                 </td>
 
                                 <td class="border px-3 py-2">
-                                    @if ($item->status_piutang === 'lunas')
-                                    <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">
-                                        Lunas
+                                    <span class="px-2 py-1 text-xs rounded {{ $statusClass }}">
+                                        {{ $statusLabel }}
                                     </span>
-                                    @elseif ($item->status_piutang === 'sebagian_dibayar')
-                                    <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700">
-                                        Sebagian Dibayar
+                                </td>
+
+                                <td class="border px-3 py-2 text-center">
+                                    @if ($isHistoris)
+                                    <span class="px-2 py-1 text-xs rounded bg-purple-100 text-purple-700">
+                                        Historis
                                     </span>
                                     @else
-                                    <span class="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">
-                                        Belum Lunas
+                                    <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">
+                                        Sistem
                                     </span>
                                     @endif
                                 </td>
@@ -232,19 +313,9 @@
                                 </td>
 
                                 <td class="border px-3 py-2 text-center">
-                                    @if ($item->status_piutang === 'lunas')
-                                    <span class="text-green-700 font-semibold">
-                                        Selesai
+                                    <span class="{{ $keteranganClass }} font-semibold">
+                                        {{ $keteranganLabel }}
                                     </span>
-                                    @elseif ($lewatJatuhTempo)
-                                    <span class="text-red-700 font-semibold">
-                                        Lewat Tempo
-                                    </span>
-                                    @else
-                                    <span class="text-yellow-700 font-semibold">
-                                        Berjalan
-                                    </span>
-                                    @endif
                                 </td>
 
                                 <td class="border px-3 py-2 text-center">
@@ -256,7 +327,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="10" class="border px-3 py-6 text-center text-gray-500">
+                                <td colspan="12" class="border px-3 py-6 text-center text-gray-500">
                                     Data laporan piutang belum tersedia.
                                 </td>
                             </tr>

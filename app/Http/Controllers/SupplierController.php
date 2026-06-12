@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Supplier;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class SupplierController extends Controller
 {
@@ -15,7 +16,9 @@ class SupplierController extends Controller
             ->when($search, function ($query, $search) {
                 $query->where('nama_supplier', 'like', "%{$search}%")
                     ->orWhere('kode_supplier', 'like', "%{$search}%")
-                    ->orWhere('nomor_telepon', 'like', "%{$search}%");
+                    ->orWhere('nomor_telepon', 'like', "%{$search}%")
+                    ->orWhere('npwp', 'like', "%{$search}%")
+                    ->orWhere('alamat', 'like', "%{$search}%");
             })
             ->orderBy('created_at', 'desc')
             ->paginate(10);
@@ -32,19 +35,25 @@ class SupplierController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'nama_supplier' => 'required|string|max:255',
             'nomor_telepon' => 'nullable|string|max:30',
+            'npwp' => 'nullable|string|max:30',
             'alamat' => 'nullable|string',
             'catatan' => 'nullable|string',
         ]);
 
+        $this->tambahkanValidasiDuplikatSupplier($validator, $request);
+
+        $validator->validate();
+
         Supplier::create([
             'kode_supplier' => $this->generateKodeSupplier(),
-            'nama_supplier' => $request->nama_supplier,
-            'nomor_telepon' => $request->nomor_telepon,
-            'alamat' => $request->alamat,
-            'catatan' => $request->catatan,
+            'nama_supplier' => trim($request->nama_supplier),
+            'nomor_telepon' => $this->ubahKosongMenjadiNull($request->nomor_telepon),
+            'npwp' => $this->ubahKosongMenjadiNull($request->npwp),
+            'alamat' => $this->ubahKosongMenjadiNull($request->alamat),
+            'catatan' => $this->ubahKosongMenjadiNull($request->catatan),
             'status_aktif' => true,
         ]);
 
@@ -55,32 +64,22 @@ class SupplierController extends Controller
 
     public function quickStore(Request $request)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'nama_supplier' => 'required|string|max:255',
-            'nomor_telepon' => 'required|string|max:30',
+            'nomor_telepon' => 'nullable|string|max:30',
+            'npwp' => 'nullable|string|max:30',
             'alamat' => 'nullable|string',
             'catatan' => 'nullable|string',
         ]);
 
-        $namaSupplier = trim($request->nama_supplier);
-        $nomorTelepon = trim($request->nomor_telepon);
-        $nomorTeleponNormal = $this->normalisasiNomorTelepon($nomorTelepon);
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Data supplier tidak valid.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-        /*
-         * Cek supplier lama:
-         * - Jika nama sama, dianggap supplier sudah tersedia.
-         * - Jika nomor HP sama, dianggap supplier sudah tersedia.
-         */
-        $existingSupplier = Supplier::query()
-            ->whereRaw('LOWER(nama_supplier) = ?', [strtolower($namaSupplier)])
-            ->orWhere('nomor_telepon', $nomorTelepon)
-            ->get()
-            ->first(function ($supplier) use ($namaSupplier, $nomorTeleponNormal) {
-                $namaSama = strtolower(trim($supplier->nama_supplier)) === strtolower($namaSupplier);
-                $nomorSama = $this->normalisasiNomorTelepon($supplier->nomor_telepon) === $nomorTeleponNormal;
-
-                return $namaSama || $nomorSama;
-            });
+        $existingSupplier = $this->cariSupplierDuplikat($request);
 
         if ($existingSupplier) {
             if (!$existingSupplier->status_aktif) {
@@ -97,6 +96,7 @@ class SupplierController extends Controller
                     'kode_supplier' => $existingSupplier->kode_supplier,
                     'nama_supplier' => $existingSupplier->nama_supplier,
                     'nomor_telepon' => $existingSupplier->nomor_telepon,
+                    'npwp' => $existingSupplier->npwp,
                     'alamat' => $existingSupplier->alamat,
                 ],
             ]);
@@ -104,10 +104,11 @@ class SupplierController extends Controller
 
         $supplier = Supplier::create([
             'kode_supplier' => $this->generateKodeSupplier(),
-            'nama_supplier' => $namaSupplier,
-            'nomor_telepon' => $nomorTelepon,
-            'alamat' => $request->alamat,
-            'catatan' => $request->catatan,
+            'nama_supplier' => trim($request->nama_supplier),
+            'nomor_telepon' => $this->ubahKosongMenjadiNull($request->nomor_telepon),
+            'npwp' => $this->ubahKosongMenjadiNull($request->npwp),
+            'alamat' => $this->ubahKosongMenjadiNull($request->alamat),
+            'catatan' => $this->ubahKosongMenjadiNull($request->catatan),
             'status_aktif' => true,
         ]);
 
@@ -119,6 +120,7 @@ class SupplierController extends Controller
                 'kode_supplier' => $supplier->kode_supplier,
                 'nama_supplier' => $supplier->nama_supplier,
                 'nomor_telepon' => $supplier->nomor_telepon,
+                'npwp' => $supplier->npwp,
                 'alamat' => $supplier->alamat,
             ],
         ]);
@@ -131,19 +133,25 @@ class SupplierController extends Controller
 
     public function update(Request $request, Supplier $supplier)
     {
-        $request->validate([
+        $validator = Validator::make($request->all(), [
             'nama_supplier' => 'required|string|max:255',
             'nomor_telepon' => 'nullable|string|max:30',
+            'npwp' => 'nullable|string|max:30',
             'alamat' => 'nullable|string',
             'catatan' => 'nullable|string',
             'status_aktif' => 'required|boolean',
         ]);
 
+        $this->tambahkanValidasiDuplikatSupplier($validator, $request, $supplier->id_supplier);
+
+        $validator->validate();
+
         $supplier->update([
-            'nama_supplier' => $request->nama_supplier,
-            'nomor_telepon' => $request->nomor_telepon,
-            'alamat' => $request->alamat,
-            'catatan' => $request->catatan,
+            'nama_supplier' => trim($request->nama_supplier),
+            'nomor_telepon' => $this->ubahKosongMenjadiNull($request->nomor_telepon),
+            'npwp' => $this->ubahKosongMenjadiNull($request->npwp),
+            'alamat' => $this->ubahKosongMenjadiNull($request->alamat),
+            'catatan' => $this->ubahKosongMenjadiNull($request->catatan),
             'status_aktif' => $request->status_aktif,
         ]);
 
@@ -163,6 +171,125 @@ class SupplierController extends Controller
             ->with('success', 'Supplier berhasil dinonaktifkan.');
     }
 
+    private function tambahkanValidasiDuplikatSupplier($validator, Request $request, ?int $ignoreId = null): void
+    {
+        $validator->after(function ($validator) use ($request, $ignoreId) {
+            $namaSupplier = trim($request->nama_supplier ?? '');
+            $nomorTelepon = trim($request->nomor_telepon ?? '');
+            $npwp = trim($request->npwp ?? '');
+            $alamat = trim($request->alamat ?? '');
+
+            if ($namaSupplier !== '' && $this->namaSupplierSudahAda($namaSupplier, $ignoreId)) {
+                $validator->errors()->add('nama_supplier', 'Nama perusahaan supplier sudah digunakan oleh supplier lain.');
+            }
+
+            if ($nomorTelepon !== '' && $this->nomorTeleponSudahAda($nomorTelepon, $ignoreId)) {
+                $validator->errors()->add('nomor_telepon', 'Nomor telepon sudah digunakan oleh supplier lain.');
+            }
+
+            if ($npwp !== '' && $this->npwpSudahAda($npwp, $ignoreId)) {
+                $validator->errors()->add('npwp', 'NPWP sudah digunakan oleh supplier lain.');
+            }
+
+            if ($alamat !== '' && $this->alamatSudahAda($alamat, $ignoreId)) {
+                $validator->errors()->add('alamat', 'Alamat sudah digunakan oleh supplier lain.');
+            }
+        });
+    }
+
+    private function cariSupplierDuplikat(Request $request): ?Supplier
+    {
+        $namaSupplier = trim($request->nama_supplier ?? '');
+        $nomorTeleponNormal = $this->normalisasiNomorTelepon($request->nomor_telepon);
+        $npwpNormal = $this->normalisasiNpwp($request->npwp);
+        $alamatNormal = $this->normalisasiTeks($request->alamat);
+
+        return Supplier::query()
+            ->get()
+            ->first(function ($supplier) use ($namaSupplier, $nomorTeleponNormal, $npwpNormal, $alamatNormal) {
+                $namaSama = $namaSupplier !== ''
+                    && $this->normalisasiTeks($supplier->nama_supplier) === $this->normalisasiTeks($namaSupplier);
+
+                $nomorSama = $nomorTeleponNormal !== ''
+                    && $this->normalisasiNomorTelepon($supplier->nomor_telepon) === $nomorTeleponNormal;
+
+                $npwpSama = $npwpNormal !== ''
+                    && $this->normalisasiNpwp($supplier->npwp) === $npwpNormal;
+
+                $alamatSama = $alamatNormal !== ''
+                    && $this->normalisasiTeks($supplier->alamat) === $alamatNormal;
+
+                return $namaSama || $nomorSama || $npwpSama || $alamatSama;
+            });
+    }
+
+    private function namaSupplierSudahAda(string $namaSupplier, ?int $ignoreId = null): bool
+    {
+        return Supplier::query()
+            ->when($ignoreId, function ($query, $ignoreId) {
+                $query->where('id_supplier', '!=', $ignoreId);
+            })
+            ->whereRaw('LOWER(TRIM(nama_supplier)) = ?', [strtolower(trim($namaSupplier))])
+            ->exists();
+    }
+
+    private function nomorTeleponSudahAda(string $nomorTelepon, ?int $ignoreId = null): bool
+    {
+        $nomorTeleponNormal = $this->normalisasiNomorTelepon($nomorTelepon);
+
+        if ($nomorTeleponNormal === '') {
+            return false;
+        }
+
+        return Supplier::query()
+            ->when($ignoreId, function ($query, $ignoreId) {
+                $query->where('id_supplier', '!=', $ignoreId);
+            })
+            ->whereNotNull('nomor_telepon')
+            ->get()
+            ->contains(function ($supplier) use ($nomorTeleponNormal) {
+                return $this->normalisasiNomorTelepon($supplier->nomor_telepon) === $nomorTeleponNormal;
+            });
+    }
+
+    private function npwpSudahAda(string $npwp, ?int $ignoreId = null): bool
+    {
+        $npwpNormal = $this->normalisasiNpwp($npwp);
+
+        if ($npwpNormal === '') {
+            return false;
+        }
+
+        return Supplier::query()
+            ->when($ignoreId, function ($query, $ignoreId) {
+                $query->where('id_supplier', '!=', $ignoreId);
+            })
+            ->whereNotNull('npwp')
+            ->get()
+            ->contains(function ($supplier) use ($npwpNormal) {
+                return $this->normalisasiNpwp($supplier->npwp) === $npwpNormal;
+            });
+    }
+
+    private function alamatSudahAda(string $alamat, ?int $ignoreId = null): bool
+    {
+        $alamatNormal = $this->normalisasiTeks($alamat);
+
+        if ($alamatNormal === '') {
+            return false;
+        }
+
+        return Supplier::query()
+            ->when($ignoreId, function ($query, $ignoreId) {
+                $query->where('id_supplier', '!=', $ignoreId);
+            })
+            ->whereNotNull('alamat')
+            ->get()
+            ->contains(function ($supplier) use ($alamatNormal) {
+                return $this->normalisasiTeks($supplier->alamat) === $alamatNormal;
+            });
+    }
+
     private function generateKodeSupplier()
     {
         $lastSupplier = Supplier::orderBy('id_supplier', 'desc')->first();
@@ -180,5 +307,25 @@ class SupplierController extends Controller
     private function normalisasiNomorTelepon(?string $nomorTelepon): string
     {
         return preg_replace('/[^0-9]/', '', $nomorTelepon ?? '');
+    }
+
+    private function normalisasiNpwp(?string $npwp): string
+    {
+        return preg_replace('/[^0-9]/', '', $npwp ?? '');
+    }
+
+    private function normalisasiTeks(?string $teks): string
+    {
+        $teks = trim($teks ?? '');
+        $teks = preg_replace('/\s+/', ' ', $teks);
+
+        return strtolower($teks);
+    }
+
+    private function ubahKosongMenjadiNull(?string $value): ?string
+    {
+        $value = trim($value ?? '');
+
+        return $value === '' ? null : $value;
     }
 }

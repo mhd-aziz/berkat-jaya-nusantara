@@ -1,11 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Laporan Penjualan
-            </h2>
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Laporan Penjualan
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    Laporan invoice penjualan sistem berjalan dan invoice penjualan historis.
+                </p>
+            </div>
 
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('laporan.penjualan.exportExcel', request()->query()) }}"
                     class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                     Export Excel
@@ -24,7 +29,7 @@
 
             <div class="bg-white shadow-sm sm:rounded-lg p-6 mb-6">
                 <form method="GET" action="{{ route('laporan.penjualan') }}">
-                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
                         <div>
                             <label class="block mb-1 font-medium">Tanggal Awal</label>
                             <input type="date"
@@ -63,14 +68,8 @@
                                 <option value="tunai" {{ request('metode_pembayaran') === 'tunai' ? 'selected' : '' }}>
                                     Tunai
                                 </option>
-                                <option value="transfer" {{ request('metode_pembayaran') === 'transfer' ? 'selected' : '' }}>
-                                    Transfer
-                                </option>
-                                <option value="giro" {{ request('metode_pembayaran') === 'giro' ? 'selected' : '' }}>
-                                    Giro
-                                </option>
-                                <option value="lainnya" {{ request('metode_pembayaran') === 'lainnya' ? 'selected' : '' }}>
-                                    Lainnya
+                                <option value="kredit" {{ request('metode_pembayaran') === 'kredit' ? 'selected' : '' }}>
+                                    Kredit / Piutang
                                 </option>
                             </select>
                         </div>
@@ -93,11 +92,25 @@
                         </div>
 
                         <div>
+                            <label class="block mb-1 font-medium">Tipe Invoice</label>
+                            <select name="tipe_invoice"
+                                class="w-full border-gray-300 rounded-md shadow-sm">
+                                <option value="">Semua</option>
+                                <option value="sistem" {{ request('tipe_invoice') === 'sistem' ? 'selected' : '' }}>
+                                    Sistem Berjalan
+                                </option>
+                                <option value="historis" {{ request('tipe_invoice') === 'historis' ? 'selected' : '' }}>
+                                    Historis / Lama
+                                </option>
+                            </select>
+                        </div>
+
+                        <div>
                             <label class="block mb-1 font-medium">Cari</label>
                             <input type="text"
                                 name="search"
                                 value="{{ request('search') }}"
-                                placeholder="Invoice/customer..."
+                                placeholder="Invoice/dokumen/customer..."
                                 class="w-full border-gray-300 rounded-md shadow-sm">
                         </div>
                     </div>
@@ -120,6 +133,9 @@
                 <div class="bg-white shadow-sm rounded-lg p-4">
                     <p class="text-sm text-gray-500">Total Transaksi</p>
                     <p class="text-2xl font-bold">{{ $totalTransaksi }}</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Sistem: {{ $totalSistemBerjalan }} | Historis: {{ $totalHistoris }}
+                    </p>
                 </div>
 
                 <div class="bg-white shadow-sm rounded-lg p-4">
@@ -144,37 +160,98 @@
                 </div>
             </div>
 
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white shadow-sm rounded-lg p-4">
+                    <p class="text-sm text-gray-500">Total Tunai</p>
+                    <p class="text-xl font-bold">
+                        Rp {{ number_format($totalTunai, 0, ',', '.') }}
+                    </p>
+                </div>
+
+                <div class="bg-white shadow-sm rounded-lg p-4">
+                    <p class="text-sm text-gray-500">Total Kredit</p>
+                    <p class="text-xl font-bold">
+                        Rp {{ number_format($totalKredit, 0, ',', '.') }}
+                    </p>
+                </div>
+
+                <div class="bg-white shadow-sm rounded-lg p-4">
+                    <p class="text-sm text-gray-500">Total Dibayar Piutang</p>
+                    <p class="text-xl font-bold text-blue-700">
+                        Rp {{ number_format($totalDibayar, 0, ',', '.') }}
+                    </p>
+                </div>
+
+                <div class="bg-white shadow-sm rounded-lg p-4">
+                    <p class="text-sm text-gray-500">Sisa Piutang</p>
+                    <p class="text-xl font-bold text-red-700">
+                        Rp {{ number_format($totalSisaPiutang, 0, ',', '.') }}
+                    </p>
+                </div>
+            </div>
+
             <div class="bg-white shadow-sm sm:rounded-lg p-6">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full border border-gray-200">
+                    <table class="min-w-full border border-gray-200 text-sm">
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="border px-3 py-2 text-left">No</th>
                                 <th class="border px-3 py-2 text-left">Tanggal</th>
-                                <th class="border px-3 py-2 text-left">Nomor Invoice</th>
+                                <th class="border px-3 py-2 text-left">Invoice</th>
                                 <th class="border px-3 py-2 text-left">Customer</th>
                                 <th class="border px-3 py-2 text-left">Metode</th>
                                 <th class="border px-3 py-2 text-left">Status</th>
+                                <th class="border px-3 py-2 text-center">Tipe</th>
                                 <th class="border px-3 py-2 text-right">Subtotal</th>
                                 <th class="border px-3 py-2 text-right">Pajak</th>
-                                <th class="border px-3 py-2 text-right">Total Akhir</th>
+                                <th class="border px-3 py-2 text-right">Total</th>
+                                <th class="border px-3 py-2 text-right">Sisa Piutang</th>
                                 <th class="border px-3 py-2 text-center">Detail</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             @forelse ($penjualan as $item)
+                            @php
+                            $isHistoris = (bool) ($item->is_historical ?? false);
+                            $pajakDitambahkan = $item->pajak_ditambahkan ?? true;
+
+                            $statusLabel = match ($item->status_pembayaran) {
+                            'lunas' => 'Lunas',
+                            'sebagian' => 'Sebagian',
+                            default => 'Belum Lunas',
+                            };
+
+                            $statusClass = match ($item->status_pembayaran) {
+                            'lunas' => 'bg-green-100 text-green-700',
+                            'sebagian' => 'bg-blue-100 text-blue-700',
+                            default => 'bg-yellow-100 text-yellow-700',
+                            };
+
+                            $detailRoute = $isHistoris
+                            ? route('invoice-historis.penjualan.show', ['penjualan' => $item->id_penjualan, 'back_url' => request()->fullUrl()])
+                            : route('penjualan.show', ['penjualan' => $item->id_penjualan, 'back_url' => request()->fullUrl()]);
+                            @endphp
+
                             <tr>
                                 <td class="border px-3 py-2">
                                     {{ $penjualan->firstItem() + $loop->index }}
                                 </td>
 
-                                <td class="border px-3 py-2">
+                                <td class="border px-3 py-2 whitespace-nowrap">
                                     {{ $item->tanggal_penjualan ? $item->tanggal_penjualan->format('d-m-Y') : '-' }}
                                 </td>
 
                                 <td class="border px-3 py-2">
-                                    {{ $item->nomor_invoice }}
+                                    <div class="font-semibold">
+                                        {{ $item->nomor_invoice }}
+                                    </div>
+
+                                    @if ($item->nomor_dokumen_asli)
+                                    <div class="text-xs text-gray-500">
+                                        Dok. Asli: {{ $item->nomor_dokumen_asli }}
+                                    </div>
+                                    @endif
                                 </td>
 
                                 <td class="border px-3 py-2">
@@ -191,17 +268,25 @@
                                 </td>
 
                                 <td class="border px-3 py-2">
-                                    @if ($item->status_pembayaran === 'lunas')
-                                    <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">
-                                        Lunas
+                                    <span class="px-2 py-1 text-xs rounded {{ $statusClass }}">
+                                        {{ $statusLabel }}
                                     </span>
-                                    @elseif ($item->status_pembayaran === 'sebagian')
-                                    <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700">
-                                        Sebagian
+
+                                    @if (!$pajakDitambahkan)
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        Pajak tampil saja
+                                    </div>
+                                    @endif
+                                </td>
+
+                                <td class="border px-3 py-2 text-center">
+                                    @if ($isHistoris)
+                                    <span class="px-2 py-1 text-xs rounded bg-purple-100 text-purple-700">
+                                        Historis
                                     </span>
                                     @else
-                                    <span class="px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-700">
-                                        Belum Lunas
+                                    <span class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-700">
+                                        Sistem
                                     </span>
                                     @endif
                                 </td>
@@ -218,8 +303,16 @@
                                     Rp {{ number_format($item->total_akhir, 0, ',', '.') }}
                                 </td>
 
+                                <td class="border px-3 py-2 text-right">
+                                    @if ($item->piutang)
+                                    Rp {{ number_format($item->piutang->sisa_piutang, 0, ',', '.') }}
+                                    @else
+                                    -
+                                    @endif
+                                </td>
+
                                 <td class="border px-3 py-2 text-center">
-                                    <a href="{{ route('penjualan.show', ['penjualan' => $item->id_penjualan, 'back_url' => request()->fullUrl()]) }}"
+                                    <a href="{{ $detailRoute }}"
                                         class="text-blue-600 hover:underline">
                                         Lihat
                                     </a>
@@ -227,7 +320,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="10" class="border px-3 py-6 text-center text-gray-500">
+                                <td colspan="12" class="border px-3 py-6 text-center text-gray-500">
                                     Data laporan penjualan belum tersedia.
                                 </td>
                             </tr>

@@ -16,6 +16,7 @@ class Supplier extends Model
         'kode_supplier',
         'nama_supplier',
         'nomor_telepon',
+        'npwp',
         'alamat',
         'catatan',
         'status_aktif',

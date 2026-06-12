@@ -1,11 +1,16 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                Laporan Stok Barang
-            </h2>
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+            <div>
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    Laporan Stok Barang
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">
+                    Laporan persediaan barang, nilai stok, estimasi nilai jual, dan kondisi stok saat ini.
+                </p>
+            </div>
 
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('laporan.stokBarang.exportExcel', request()->query()) }}"
                     class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700">
                     Export Excel
@@ -89,6 +94,10 @@
                 </form>
             </div>
 
+            @php
+            $totalPotensiMargin = $totalEstimasiNilaiJual - $totalNilaiStok;
+            @endphp
+
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div class="bg-white shadow-sm rounded-lg p-4">
                     <p class="text-sm text-gray-500">Total Jenis Barang</p>
@@ -97,128 +106,213 @@
 
                 <div class="bg-white shadow-sm rounded-lg p-4">
                     <p class="text-sm text-gray-500">Total Stok</p>
-                    <p class="text-2xl font-bold">{{ number_format($totalStok, 0, ',', '.') }}</p>
+                    <p class="text-2xl font-bold">
+                        {{ number_format($totalStok, 0, ',', '.') }}
+                    </p>
                 </div>
 
                 <div class="bg-white shadow-sm rounded-lg p-4">
                     <p class="text-sm text-gray-500">Barang Kosong</p>
-                    <p class="text-2xl font-bold text-red-700">{{ $totalBarangKosong }}</p>
+                    <p class="text-2xl font-bold text-red-700">
+                        {{ $totalBarangKosong }}
+                    </p>
                 </div>
 
                 <div class="bg-white shadow-sm rounded-lg p-4">
                     <p class="text-sm text-gray-500">Stok Rendah</p>
-                    <p class="text-2xl font-bold text-yellow-700">{{ $totalBarangStokRendah }}</p>
+                    <p class="text-2xl font-bold text-yellow-700">
+                        {{ $totalBarangStokRendah }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Batas rendah: {{ $batasStokRendah }}
+                    </p>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div class="bg-white shadow-sm rounded-lg p-4">
                     <p class="text-sm text-gray-500">Estimasi Nilai Stok</p>
                     <p class="text-2xl font-bold">
                         Rp {{ number_format($totalNilaiStok, 0, ',', '.') }}
                     </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Stok saat ini × harga beli terakhir.
+                    </p>
                 </div>
 
                 <div class="bg-white shadow-sm rounded-lg p-4">
                     <p class="text-sm text-gray-500">Estimasi Nilai Jual</p>
-                    <p class="text-2xl font-bold">
+                    <p class="text-2xl font-bold text-green-700">
                         Rp {{ number_format($totalEstimasiNilaiJual, 0, ',', '.') }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Stok saat ini × harga jual default.
+                    </p>
+                </div>
+
+                <div class="bg-white shadow-sm rounded-lg p-4">
+                    <p class="text-sm text-gray-500">Estimasi Margin Kotor</p>
+                    <p class="text-2xl font-bold {{ $totalPotensiMargin >= 0 ? 'text-blue-700' : 'text-red-700' }}">
+                        Rp {{ number_format($totalPotensiMargin, 0, ',', '.') }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        Estimasi jual dikurangi estimasi nilai stok.
                     </p>
                 </div>
             </div>
 
             <div class="bg-white shadow-sm sm:rounded-lg p-6">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full border border-gray-200">
+                    <table class="min-w-full border border-gray-200 text-sm">
                         <thead class="bg-gray-100">
                             <tr>
                                 <th class="border px-3 py-2 text-left">No</th>
-                                <th class="border px-3 py-2 text-left">Kode Barang</th>
+                                <th class="border px-3 py-2 text-left">Kode</th>
                                 <th class="border px-3 py-2 text-left">Nama Barang</th>
                                 <th class="border px-3 py-2 text-center">Satuan</th>
+                                <th class="border px-3 py-2 text-left">Perhitungan Harga</th>
                                 <th class="border px-3 py-2 text-center">Stok</th>
-                                <th class="border px-3 py-2 text-right">Harga Beli Terakhir</th>
+                                <th class="border px-3 py-2 text-right">Harga Beli</th>
                                 <th class="border px-3 py-2 text-right">Nilai Stok</th>
-                                <th class="border px-3 py-2 text-right">Harga Jual Default</th>
-                                <th class="border px-3 py-2 text-right">Estimasi Nilai Jual</th>
-                                <th class="border px-3 py-2 text-center">Status</th>
+                                <th class="border px-3 py-2 text-right">Harga Jual</th>
+                                <th class="border px-3 py-2 text-right">Estimasi Jual</th>
+                                <th class="border px-3 py-2 text-right">Margin</th>
+                                <th class="border px-3 py-2 text-center">Status Stok</th>
+                                <th class="border px-3 py-2 text-center">Status Barang</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             @forelse ($barang as $item)
                             @php
-                            $nilaiStok = $item->stok_saat_ini * ($item->harga_beli_terakhir ?? 0);
-                            $estimasiNilaiJual = $item->stok_saat_ini * ($item->harga_jual_default ?? 0);
+                            $stokSaatIni = (float) ($item->stok_saat_ini ?? 0);
+                            $hargaBeli = (float) ($item->harga_beli_terakhir ?? 0);
+                            $hargaJual = (float) ($item->harga_jual_default ?? 0);
 
-                            if ($item->stok_saat_ini <= 0) {
+                            $nilaiStok = $stokSaatIni * $hargaBeli;
+                            $estimasiNilaiJual = $stokSaatIni * $hargaJual;
+                            $estimasiMargin = $estimasiNilaiJual - $nilaiStok;
+
+                            $tipePerhitungan = $item->tipe_perhitungan_harga ?? 'normal';
+                            $satuan = $item->satuan ?? '-';
+                            $satuanHitung = $item->satuan_hitung_harga ?? $satuan;
+                            $isiPerSatuan = (float) ($item->isi_per_satuan ?? 1);
+
+                            if ($stokSaatIni <= 0) {
                                 $statusStok='Kosong' ;
                                 $statusClass='bg-red-100 text-red-700' ;
                                 $rowClass='bg-red-50' ;
-                                } elseif ($item->stok_saat_ini <= $batasStokRendah) {
-                                    $statusStok='Stok Rendah' ;
-                                    $statusClass='bg-yellow-100 text-yellow-700' ;
-                                    $rowClass='bg-yellow-50' ;
-                                    } else {
-                                    $statusStok='Tersedia' ;
-                                    $statusClass='bg-green-100 text-green-700' ;
-                                    $rowClass='' ;
-                                    }
-                                    @endphp
+                                } elseif ($stokSaatIni <=$batasStokRendah) {
+                                $statusStok='Stok Rendah' ;
+                                $statusClass='bg-yellow-100 text-yellow-700' ;
+                                $rowClass='bg-yellow-50' ;
+                                } else {
+                                $statusStok='Tersedia' ;
+                                $statusClass='bg-green-100 text-green-700' ;
+                                $rowClass='' ;
+                                }
+                                @endphp
 
-                                    <tr class="{{ $rowClass }}">
-                                    <td class="border px-3 py-2">
-                                        {{ $barang->firstItem() + $loop->index }}
-                                    </td>
+                                <tr class="{{ $rowClass }}">
+                                <td class="border px-3 py-2">
+                                    {{ $barang->firstItem() + $loop->index }}
+                                </td>
 
-                                    <td class="border px-3 py-2">
-                                        {{ $item->kode_barang }}
-                                    </td>
+                                <td class="border px-3 py-2 font-semibold">
+                                    {{ $item->kode_barang }}
+                                </td>
 
-                                    <td class="border px-3 py-2">
-                                        <div class="font-medium">{{ $item->nama_barang }}</div>
-                                        @if (!$item->status_aktif)
-                                        <div class="text-xs text-red-600">Barang nonaktif</div>
-                                        @endif
-                                    </td>
+                                <td class="border px-3 py-2">
+                                    <div class="font-medium">
+                                        {{ $item->nama_barang }}
+                                    </div>
 
-                                    <td class="border px-3 py-2 text-center">
-                                        {{ $item->satuan }}
-                                    </td>
+                                    @if (!$item->status_aktif)
+                                    <div class="text-xs text-red-600">
+                                        Barang nonaktif
+                                    </div>
+                                    @endif
+                                </td>
 
-                                    <td class="border px-3 py-2 text-center font-semibold">
-                                        {{ number_format($item->stok_saat_ini, 0, ',', '.') }}
-                                    </td>
+                                <td class="border px-3 py-2 text-center">
+                                    {{ strtoupper($satuan) }}
+                                </td>
 
-                                    <td class="border px-3 py-2 text-right">
-                                        Rp {{ number_format($item->harga_beli_terakhir ?? 0, 0, ',', '.') }}
-                                    </td>
+                                <td class="border px-3 py-2">
+                                    @if ($tipePerhitungan === 'isi_kemasan')
+                                    <div class="font-medium">
+                                        Isi Kemasan
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        1 {{ strtoupper($satuan) }} =
+                                        {{ rtrim(rtrim(number_format($isiPerSatuan, 3, ',', '.'), '0'), ',') }}
+                                        {{ strtoupper($satuanHitung) }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Harga jual dihitung per {{ strtoupper($satuanHitung) }}.
+                                    </div>
+                                    @else
+                                    <div class="font-medium">
+                                        Normal
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Harga jual dihitung per {{ strtoupper($satuan) }}.
+                                    </div>
+                                    @endif
+                                </td>
 
-                                    <td class="border px-3 py-2 text-right">
-                                        Rp {{ number_format($nilaiStok, 0, ',', '.') }}
-                                    </td>
+                                <td class="border px-3 py-2 text-center font-semibold">
+                                    {{ number_format($stokSaatIni, 0, ',', '.') }}
+                                </td>
 
-                                    <td class="border px-3 py-2 text-right">
-                                        Rp {{ number_format($item->harga_jual_default ?? 0, 0, ',', '.') }}
-                                    </td>
+                                <td class="border px-3 py-2 text-right">
+                                    Rp {{ number_format($hargaBeli, 0, ',', '.') }}
+                                </td>
 
-                                    <td class="border px-3 py-2 text-right">
-                                        Rp {{ number_format($estimasiNilaiJual, 0, ',', '.') }}
-                                    </td>
+                                <td class="border px-3 py-2 text-right">
+                                    Rp {{ number_format($nilaiStok, 0, ',', '.') }}
+                                </td>
 
-                                    <td class="border px-3 py-2 text-center">
-                                        <span class="px-2 py-1 text-xs rounded {{ $statusClass }}">
-                                            {{ $statusStok }}
-                                        </span>
+                                <td class="border px-3 py-2 text-right">
+                                    Rp {{ number_format($hargaJual, 0, ',', '.') }}
+                                    <div class="text-xs text-gray-500">
+                                        / {{ strtoupper($tipePerhitungan === 'isi_kemasan' ? $satuanHitung : $satuan) }}
+                                    </div>
+                                </td>
+
+                                <td class="border px-3 py-2 text-right">
+                                    Rp {{ number_format($estimasiNilaiJual, 0, ',', '.') }}
+                                </td>
+
+                                <td class="border px-3 py-2 text-right font-semibold {{ $estimasiMargin >= 0 ? 'text-blue-700' : 'text-red-700' }}">
+                                    Rp {{ number_format($estimasiMargin, 0, ',', '.') }}
+                                </td>
+
+                                <td class="border px-3 py-2 text-center">
+                                    <span class="px-2 py-1 text-xs rounded {{ $statusClass }}">
+                                        {{ $statusStok }}
+                                    </span>
+                                </td>
+
+                                <td class="border px-3 py-2 text-center">
+                                    @if ($item->status_aktif)
+                                    <span class="px-2 py-1 text-xs rounded bg-green-100 text-green-700">
+                                        Aktif
+                                    </span>
+                                    @else
+                                    <span class="px-2 py-1 text-xs rounded bg-red-100 text-red-700">
+                                        Nonaktif
+                                    </span>
+                                    @endif
+                                </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="13" class="border px-3 py-6 text-center text-gray-500">
+                                        Data stok barang belum tersedia.
                                     </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="10" class="border px-3 py-6 text-center text-gray-500">
-                                            Data stok barang belum tersedia.
-                                        </td>
-                                    </tr>
-                                    @endforelse
+                                </tr>
+                                @endforelse
                         </tbody>
                     </table>
                 </div>

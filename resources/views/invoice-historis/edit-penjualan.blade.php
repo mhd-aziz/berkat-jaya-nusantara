@@ -4,7 +4,7 @@
     @php
     $oldIdBarang = old('id_barang');
     $oldJumlah = old('jumlah');
-    $oldHargaBeli = old('harga_beli');
+    $oldHargaJual = old('harga_jual');
 
     $rows = [];
 
@@ -13,21 +13,25 @@
     $rows[] = [
     'id_barang' => $idBarang,
     'jumlah' => $oldJumlah[$index] ?? 1,
-    'harga_beli' => $oldHargaBeli[$index] ?? 0,
+    'harga_jual' => $oldHargaJual[$index] ?? 0,
     ];
     }
     } else {
+    foreach ($penjualan->detailPenjualan as $detail) {
     $rows[] = [
-    'id_barang' => '',
-    'jumlah' => 1,
-    'harga_beli' => 0,
+    'id_barang' => $detail->id_barang,
+    'jumlah' => $detail->jumlah,
+    'harga_jual' => $detail->harga_jual,
     ];
     }
+    }
+
+    $totalDibayarPiutang = $penjualan->piutang ? (float) $penjualan->piutang->total_dibayar : 0;
     @endphp
 
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            Input Invoice Pembelian Lama
+            Edit Invoice Penjualan Lama
         </h2>
     </x-slot>
 
@@ -36,8 +40,17 @@
 
             <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md">
                 <strong>Catatan:</strong>
-                Invoice pembelian lama akan disimpan sebagai data historis dan tidak akan menambah stok barang.
+                Invoice penjualan lama adalah data historis. Perubahan data ini tidak akan mengurangi atau menambah stok barang.
+                Jika invoice kredit sudah memiliki pembayaran piutang, sistem akan menjaga agar data piutang tetap konsisten.
             </div>
+
+            @if ($penjualan->piutang && $totalDibayarPiutang > 0)
+            <div class="mb-4 p-4 bg-orange-50 border border-orange-200 text-orange-800 rounded-md">
+                Invoice ini sudah memiliki pembayaran piutang sebesar
+                <strong>Rp {{ number_format($totalDibayarPiutang, 0, ',', '.') }}</strong>.
+                Jika total invoice berubah, sisa piutang akan dihitung ulang.
+            </div>
+            @endif
 
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
 
@@ -55,19 +68,20 @@
                 </div>
                 @endif
 
-                <form action="{{ route('invoice-historis.pembelian.store') }}" method="POST" id="formPembelianHistoris">
+                <form action="{{ route('invoice-historis.penjualan.update', $penjualan->id_penjualan) }}" method="POST" id="formPenjualanHistoris">
                     @csrf
+                    @method('PUT')
 
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <div>
                             <label class="block mb-1 font-medium">Nomor Sistem</label>
                             <input type="text"
-                                value="{{ $nomorPembelian }}"
+                                value="{{ $penjualan->nomor_invoice }}"
                                 class="w-full border-gray-300 rounded-md shadow-sm bg-gray-100"
                                 readonly>
 
                             <p class="text-sm text-gray-500 mt-1">
-                                Nomor sistem dibuat otomatis.
+                                Nomor sistem historis tidak diubah.
                             </p>
                         </div>
 
@@ -77,45 +91,45 @@
                             </label>
                             <input type="text"
                                 name="nomor_dokumen_asli"
-                                value="{{ old('nomor_dokumen_asli') }}"
-                                placeholder="Contoh: NOTA-001 / INV lama"
+                                value="{{ old('nomor_dokumen_asli', $penjualan->nomor_dokumen_asli) }}"
+                                placeholder="Contoh: INV lama / nota lama"
                                 class="w-full border-gray-300 rounded-md shadow-sm"
                                 required>
 
                             <p class="text-sm text-gray-500 mt-1">
-                                Isi sesuai nomor nota/invoice lama dari supplier.
+                                Isi sesuai nomor invoice/nota lama sebelum sistem berjalan.
                             </p>
                         </div>
 
                         <div>
-                            <label class="block mb-1 font-medium">Tanggal Pembelian Lama</label>
+                            <label class="block mb-1 font-medium">Tanggal Penjualan Lama</label>
                             <input type="date"
-                                name="tanggal_pembelian"
-                                value="{{ old('tanggal_pembelian') }}"
+                                name="tanggal_penjualan"
+                                value="{{ old('tanggal_penjualan', $penjualan->tanggal_penjualan ? $penjualan->tanggal_penjualan->format('Y-m-d') : '') }}"
                                 class="w-full border-gray-300 rounded-md shadow-sm"
                                 required>
                         </div>
 
                         <div>
-                            <label class="block mb-1 font-medium">Supplier</label>
-                            <select name="id_supplier"
-                                id="supplierSelect"
+                            <label class="block mb-1 font-medium">Customer</label>
+                            <select name="id_customer"
+                                id="customerSelect"
                                 class="w-full border-gray-300 rounded-md shadow-sm"
-                                placeholder="Cari supplier..."
+                                placeholder="Cari customer..."
                                 required>
-                                <option value="">-- Cari / Pilih Supplier --</option>
+                                <option value="">-- Cari / Pilih Customer --</option>
 
-                                @foreach ($suppliers as $supplier)
-                                <option value="{{ $supplier->id_supplier }}"
-                                    {{ old('id_supplier') == $supplier->id_supplier ? 'selected' : '' }}>
-                                    {{ $supplier->kode_supplier }} - {{ $supplier->nama_supplier }}
+                                @foreach ($customers as $customer)
+                                <option value="{{ $customer->id_customer }}"
+                                    {{ old('id_customer', $penjualan->id_customer) == $customer->id_customer ? 'selected' : '' }}>
+                                    {{ $customer->kode_customer }} - {{ $customer->nama_customer }}
 
-                                    @if ($supplier->nomor_telepon)
-                                    | {{ $supplier->nomor_telepon }}
+                                    @if ($customer->nomor_telepon)
+                                    | {{ $customer->nomor_telepon }}
                                     @endif
 
-                                    @if ($supplier->npwp)
-                                    | NPWP: {{ $supplier->npwp }}
+                                    @if ($customer->npwp)
+                                    | NPWP: {{ $customer->npwp }}
                                     @endif
                                 </option>
                                 @endforeach
@@ -132,7 +146,7 @@
                                     <tr>
                                         <th class="border px-3 py-2 text-left">Barang</th>
                                         <th class="border px-3 py-2 text-right">Jumlah</th>
-                                        <th class="border px-3 py-2 text-right">Harga Beli</th>
+                                        <th class="border px-3 py-2 text-right">Harga Jual</th>
                                         <th class="border px-3 py-2 text-right">Subtotal</th>
                                         <th class="border px-3 py-2 text-center">Aksi</th>
                                     </tr>
@@ -141,7 +155,7 @@
                                 <tbody>
                                     @foreach ($rows as $row)
                                     <tr>
-                                        <td class="border px-3 py-2 min-w-[420px]">
+                                        <td class="border px-3 py-2 min-w-[460px]">
                                             <select name="id_barang[]"
                                                 class="w-full barang-select"
                                                 placeholder="Cari kode atau nama barang..."
@@ -150,18 +164,30 @@
 
                                                 @foreach ($barang as $item)
                                                 <option value="{{ $item->id_barang }}"
-                                                    data-harga="{{ $item->harga_beli_terakhir ?? 0 }}"
+                                                    data-harga="{{ $item->harga_jual_default }}"
                                                     data-satuan="{{ $item->satuan }}"
+                                                    data-tipe-perhitungan="{{ $item->tipe_perhitungan_harga ?? 'normal' }}"
+                                                    data-satuan-hitung="{{ $item->satuan_hitung_harga }}"
+                                                    data-isi-per-satuan="{{ $item->isi_per_satuan ?? 1 }}"
                                                     {{ (string) $row['id_barang'] === (string) $item->id_barang ? 'selected' : '' }}>
                                                     {{ $item->kode_barang }} - {{ $item->nama_barang }}
                                                     | Stok saat ini: {{ $item->stok_saat_ini }} {{ strtoupper($item->satuan) }}
-                                                    | Harga beli terakhir: Rp {{ number_format($item->harga_beli_terakhir ?? 0, 0, ',', '.') }}
+                                                    | Harga: Rp {{ number_format($item->harga_jual_default, 0, ',', '.') }}
+
+                                                    @if (($item->tipe_perhitungan_harga ?? 'normal') === 'isi_kemasan')
+                                                    / {{ strtoupper($item->satuan_hitung_harga) }}
+                                                    | 1 {{ strtoupper($item->satuan) }} =
+                                                    {{ rtrim(rtrim(number_format($item->isi_per_satuan, 3, ',', '.'), '0'), ',') }}
+                                                    {{ strtoupper($item->satuan_hitung_harga) }}
+                                                    @else
+                                                    / {{ strtoupper($item->satuan) }}
+                                                    @endif
                                                 </option>
                                                 @endforeach
                                             </select>
 
-                                            <p class="text-sm text-gray-500 mt-1 satuan-info">
-                                                Satuan: -
+                                            <p class="text-sm text-gray-500 mt-1 perhitungan-info">
+                                                Perhitungan: -
                                             </p>
                                         </td>
 
@@ -180,15 +206,15 @@
 
                                         <td class="border px-3 py-2">
                                             <input type="number"
-                                                name="harga_beli[]"
-                                                value="{{ $row['harga_beli'] }}"
+                                                name="harga_jual[]"
+                                                value="{{ $row['harga_jual'] }}"
                                                 min="0"
                                                 step="0.01"
                                                 class="w-full border-gray-300 rounded-md shadow-sm text-right harga-input"
                                                 required>
 
-                                            <p class="text-xs text-gray-500 mt-1 text-right">
-                                                / satuan
+                                            <p class="text-xs text-gray-500 mt-1 harga-info text-right">
+                                                -
                                             </p>
                                         </td>
 
@@ -210,7 +236,7 @@
 
                         <template id="templateBarangRow">
                             <tr>
-                                <td class="border px-3 py-2 min-w-[420px]">
+                                <td class="border px-3 py-2 min-w-[460px]">
                                     <select name="id_barang[]"
                                         class="w-full barang-select"
                                         placeholder="Cari kode atau nama barang..."
@@ -219,17 +245,29 @@
 
                                         @foreach ($barang as $item)
                                         <option value="{{ $item->id_barang }}"
-                                            data-harga="{{ $item->harga_beli_terakhir ?? 0 }}"
-                                            data-satuan="{{ $item->satuan }}">
+                                            data-harga="{{ $item->harga_jual_default }}"
+                                            data-satuan="{{ $item->satuan }}"
+                                            data-tipe-perhitungan="{{ $item->tipe_perhitungan_harga ?? 'normal' }}"
+                                            data-satuan-hitung="{{ $item->satuan_hitung_harga }}"
+                                            data-isi-per-satuan="{{ $item->isi_per_satuan ?? 1 }}">
                                             {{ $item->kode_barang }} - {{ $item->nama_barang }}
                                             | Stok saat ini: {{ $item->stok_saat_ini }} {{ strtoupper($item->satuan) }}
-                                            | Harga beli terakhir: Rp {{ number_format($item->harga_beli_terakhir ?? 0, 0, ',', '.') }}
+                                            | Harga: Rp {{ number_format($item->harga_jual_default, 0, ',', '.') }}
+
+                                            @if (($item->tipe_perhitungan_harga ?? 'normal') === 'isi_kemasan')
+                                            / {{ strtoupper($item->satuan_hitung_harga) }}
+                                            | 1 {{ strtoupper($item->satuan) }} =
+                                            {{ rtrim(rtrim(number_format($item->isi_per_satuan, 3, ',', '.'), '0'), ',') }}
+                                            {{ strtoupper($item->satuan_hitung_harga) }}
+                                            @else
+                                            / {{ strtoupper($item->satuan) }}
+                                            @endif
                                         </option>
                                         @endforeach
                                     </select>
 
-                                    <p class="text-sm text-gray-500 mt-1 satuan-info">
-                                        Satuan: -
+                                    <p class="text-sm text-gray-500 mt-1 perhitungan-info">
+                                        Perhitungan: -
                                     </p>
                                 </td>
 
@@ -248,15 +286,15 @@
 
                                 <td class="border px-3 py-2">
                                     <input type="number"
-                                        name="harga_beli[]"
+                                        name="harga_jual[]"
                                         value="0"
                                         min="0"
                                         step="0.01"
                                         class="w-full border-gray-300 rounded-md shadow-sm text-right harga-input"
                                         required>
 
-                                    <p class="text-xs text-gray-500 mt-1 text-right">
-                                        / satuan
+                                    <p class="text-xs text-gray-500 mt-1 harga-info text-right">
+                                        -
                                     </p>
                                 </td>
 
@@ -282,10 +320,37 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                         <div>
+                            <div class="mb-4">
+                                <label class="block mb-1 font-medium">Metode Pembayaran</label>
+                                <select name="metode_pembayaran"
+                                    id="metodePembayaran"
+                                    class="w-full border-gray-300 rounded-md shadow-sm"
+                                    required>
+                                    <option value="tunai" {{ old('metode_pembayaran', $penjualan->metode_pembayaran) === 'tunai' ? 'selected' : '' }}>
+                                        Tunai
+                                    </option>
+                                    <option value="kredit" {{ old('metode_pembayaran', $penjualan->metode_pembayaran) === 'kredit' ? 'selected' : '' }}>
+                                        Kredit / Piutang
+                                    </option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4" id="fieldJatuhTempo" style="display: none;">
+                                <label class="block mb-1 font-medium">Tanggal Jatuh Tempo</label>
+                                <input type="date"
+                                    name="tanggal_jatuh_tempo"
+                                    value="{{ old('tanggal_jatuh_tempo', $penjualan->tanggal_jatuh_tempo ? $penjualan->tanggal_jatuh_tempo->format('Y-m-d') : '') }}"
+                                    class="w-full border-gray-300 rounded-md shadow-sm">
+
+                                <p class="text-sm text-gray-500 mt-1">
+                                    Wajib diisi jika pembayaran kredit.
+                                </p>
+                            </div>
+
                             <label class="block mb-1 font-medium">Catatan</label>
                             <textarea name="catatan"
                                 rows="4"
-                                class="w-full border-gray-300 rounded-md shadow-sm">{{ old('catatan') }}</textarea>
+                                class="w-full border-gray-300 rounded-md shadow-sm">{{ old('catatan', $penjualan->catatan) }}</textarea>
                         </div>
 
                         <div class="bg-gray-50 p-4 rounded-md border">
@@ -294,7 +359,7 @@
                                 <input type="number"
                                     name="persentase_pajak"
                                     id="persentasePajak"
-                                    value="{{ old('persentase_pajak', 0) }}"
+                                    value="{{ old('persentase_pajak', $penjualan->persentase_pajak) }}"
                                     min="0"
                                     max="100"
                                     step="0.01"
@@ -310,7 +375,7 @@
                                             name="pajak_ditambahkan"
                                             value="1"
                                             class="mt-1"
-                                            {{ old('pajak_ditambahkan', '1') == '1' ? 'checked' : '' }}>
+                                            {{ old('pajak_ditambahkan', $penjualan->pajak_ditambahkan ? '1' : '0') == '1' ? 'checked' : '' }}>
 
                                         <span>
                                             <strong>Pajak ditambahkan ke total</strong>
@@ -322,7 +387,7 @@
                                             name="pajak_ditambahkan"
                                             value="0"
                                             class="mt-1"
-                                            {{ old('pajak_ditambahkan') == '0' ? 'checked' : '' }}>
+                                            {{ old('pajak_ditambahkan', $penjualan->pajak_ditambahkan ? '1' : '0') == '0' ? 'checked' : '' }}>
 
                                         <span>
                                             <strong>Pajak hanya ditampilkan</strong>
@@ -355,9 +420,9 @@
                         </a>
 
                         <button type="submit"
-                            class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                            onclick="return confirm('Simpan invoice pembelian lama? Data ini tidak akan menambah stok.')">
-                            Simpan Invoice Lama
+                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                            onclick="return confirm('Update invoice penjualan lama? Data ini tetap tidak akan memengaruhi stok.')">
+                            Update Invoice Lama
                         </button>
                     </div>
                 </form>
@@ -373,19 +438,19 @@
             return 'Rp ' + new Intl.NumberFormat('id-ID').format(angka);
         }
 
-        function initSupplierSelect() {
-            const supplierSelect = document.getElementById('supplierSelect');
+        function initCustomerSelect() {
+            const customerSelect = document.getElementById('customerSelect');
 
-            if (!supplierSelect || supplierSelect.tomselect) {
+            if (!customerSelect || customerSelect.tomselect) {
                 return;
             }
 
-            new TomSelect(supplierSelect, {
+            new TomSelect(customerSelect, {
                 create: false,
                 allowEmptyOption: true,
                 maxOptions: 100,
                 searchField: ['text'],
-                placeholder: 'Cari supplier...'
+                placeholder: 'Cari customer...'
             });
         }
 
@@ -430,34 +495,65 @@
             const select = row.querySelector('.barang-select');
             const selectedOption = getSelectedOption(select);
 
-            const hargaInput = row.querySelector('.harga-input');
-            const satuanInfo = row.querySelector('.satuan-info');
+            const perhitunganInfo = row.querySelector('.perhitungan-info');
             const satuanJumlahInfo = row.querySelector('.satuan-jumlah-info');
+            const hargaInfo = row.querySelector('.harga-info');
 
             if (!selectedOption) {
-                satuanInfo.innerText = 'Satuan: -';
+                perhitunganInfo.innerText = 'Perhitungan: -';
                 satuanJumlahInfo.innerText = '-';
+                hargaInfo.innerText = '-';
                 return;
             }
 
-            const harga = parseFloat(selectedOption.getAttribute('data-harga')) || 0;
             const satuan = selectedOption.getAttribute('data-satuan') || '';
+            const tipePerhitungan = selectedOption.getAttribute('data-tipe-perhitungan') || 'normal';
+            const satuanHitung = selectedOption.getAttribute('data-satuan-hitung') || satuan;
 
-            if (!hargaInput.value || parseFloat(hargaInput.value) === 0) {
-                hargaInput.value = harga;
+            satuanJumlahInfo.innerText = satuan ? satuan.toUpperCase() : '-';
+
+            if (tipePerhitungan === 'isi_kemasan') {
+                perhitunganInfo.innerText =
+                    'Perhitungan: jumlah ' + satuan.toUpperCase() +
+                    ' x isi per ' + satuan.toUpperCase() +
+                    ' x harga per ' + satuanHitung.toUpperCase();
+
+                hargaInfo.innerText = '/ ' + satuanHitung.toUpperCase();
+            } else {
+                perhitunganInfo.innerText =
+                    'Perhitungan: jumlah ' + satuan.toUpperCase() +
+                    ' x harga per ' + satuan.toUpperCase();
+
+                hargaInfo.innerText = '/ ' + satuan.toUpperCase();
+            }
+        }
+
+        function hitungSubtotalRow(row) {
+            const select = row.querySelector('.barang-select');
+            const selectedOption = getSelectedOption(select);
+
+            const jumlah = parseFloat(row.querySelector('.jumlah-input').value) || 0;
+            const harga = parseFloat(row.querySelector('.harga-input').value) || 0;
+
+            if (!selectedOption) {
+                return jumlah * harga;
             }
 
-            satuanInfo.innerText = satuan ? 'Satuan: ' + satuan.toUpperCase() : 'Satuan: -';
-            satuanJumlahInfo.innerText = satuan ? satuan.toUpperCase() : '-';
+            const tipePerhitungan = selectedOption.getAttribute('data-tipe-perhitungan') || 'normal';
+            const isiPerSatuan = parseFloat(selectedOption.getAttribute('data-isi-per-satuan')) || 1;
+
+            if (tipePerhitungan === 'isi_kemasan') {
+                return jumlah * isiPerSatuan * harga;
+            }
+
+            return jumlah * harga;
         }
 
         function hitungTotal() {
             let totalSubtotal = 0;
 
             document.querySelectorAll('#tableBarang tbody tr').forEach(function(row) {
-                const jumlah = parseFloat(row.querySelector('.jumlah-input').value) || 0;
-                const harga = parseFloat(row.querySelector('.harga-input').value) || 0;
-                const subtotal = jumlah * harga;
+                const subtotal = hitungSubtotalRow(row);
 
                 row.querySelector('.subtotal-text').innerText = formatRupiah(subtotal);
                 totalSubtotal += subtotal;
@@ -469,11 +565,20 @@
             const pajakDitambahkanInput = document.querySelector('input[name="pajak_ditambahkan"]:checked');
             const pajakDitambahkan = pajakDitambahkanInput ? pajakDitambahkanInput.value === '1' : true;
 
-            const totalAkhir = pajakDitambahkan ? totalSubtotal + nilaiPajak : totalSubtotal;
+            const totalAkhir = pajakDitambahkan ?
+                totalSubtotal + nilaiPajak :
+                totalSubtotal;
 
             document.getElementById('totalSubtotal').innerText = formatRupiah(totalSubtotal);
             document.getElementById('totalPajak').innerText = formatRupiah(nilaiPajak);
             document.getElementById('totalAkhir').innerText = formatRupiah(totalAkhir);
+        }
+
+        function toggleJatuhTempo() {
+            const metode = document.getElementById('metodePembayaran').value;
+            const field = document.getElementById('fieldJatuhTempo');
+
+            field.style.display = metode === 'kredit' ? 'block' : 'none';
         }
 
         document.addEventListener('input', function(e) {
@@ -488,6 +593,10 @@
         });
 
         document.addEventListener('change', function(e) {
+            if (e.target.id === 'metodePembayaran') {
+                toggleJatuhTempo();
+            }
+
             if (e.target.name === 'pajak_ditambahkan') {
                 hitungTotal();
             }
@@ -530,13 +639,14 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            initSupplierSelect();
+            initCustomerSelect();
             initAllBarangSelect();
 
             document.querySelectorAll('#tableBarang tbody tr').forEach(function(row) {
                 updateBarangInfo(row);
             });
 
+            toggleJatuhTempo();
             hitungTotal();
         });
     </script>

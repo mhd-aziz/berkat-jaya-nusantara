@@ -1,3 +1,12 @@
+@php
+$namaPerusahaan = 'CV. BERKAT JAYA NUSANTARA';
+$alamatPerusahaan = 'Alamat perusahaan belum diisi';
+$teleponPerusahaan = 'Telepon belum diisi';
+
+$periodeAwal = $tanggalAwal === 'awal' ? 'Awal' : $tanggalAwal;
+$periodeAkhir = $tanggalAkhir === 'akhir' ? 'Akhir' : $tanggalAkhir;
+@endphp
+
 <!DOCTYPE html>
 <html>
 
@@ -6,19 +15,38 @@
     <title>Laporan Pembelian</title>
 
     <style>
+        table {
+            border-collapse: collapse;
+        }
+
+        .company-title {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            background-color: #eff6ff;
+        }
+
         .title {
             font-size: 18px;
             font-weight: bold;
             text-align: center;
+            background-color: #dbeafe;
         }
 
         .subtitle {
             text-align: center;
+            font-weight: bold;
+        }
+
+        .section-header {
+            font-weight: bold;
+            background-color: #dbeafe;
         }
 
         .header {
             font-weight: bold;
             background-color: #eeeeee;
+            text-align: center;
         }
 
         .bold {
@@ -32,37 +60,150 @@
         .text-right {
             text-align: right;
         }
+
+        .text-format {
+            mso-number-format: "\@";
+        }
+
+        .currency {
+            mso-number-format: "#,##0";
+        }
+
+        .number-format {
+            mso-number-format: "#,##0.###";
+        }
+
+        .total-row {
+            font-weight: bold;
+            background-color: #eff6ff;
+        }
+
+        .historis {
+            background-color: #f3e8ff;
+        }
+
+        .sistem {
+            background-color: #f9fafb;
+        }
+
+        .warning {
+            background-color: #fef3c7;
+        }
+
+        .success {
+            background-color: #dcfce7;
+        }
+
+        .danger {
+            background-color: #fee2e2;
+        }
     </style>
 </head>
 
 <body>
     <table border="1">
         <tr>
-            <td colspan="13" class="title">
+            <td colspan="21" class="company-title">
+                {{ $namaPerusahaan }}
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="21" class="text-center">
+                {{ $alamatPerusahaan }} | Telp: {{ $teleponPerusahaan }}
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="21" class="title">
                 LAPORAN PEMBELIAN
             </td>
         </tr>
 
         <tr>
-            <td colspan="13" class="subtitle">
-                Periode:
-                {{ $tanggalAwal === 'awal' ? 'Awal' : $tanggalAwal }}
-                s/d
-                {{ $tanggalAkhir === 'akhir' ? 'Akhir' : $tanggalAkhir }}
+            <td colspan="21" class="subtitle">
+                Periode: {{ $periodeAwal }} s/d {{ $periodeAkhir }}
             </td>
         </tr>
 
         <tr>
-            <td colspan="13"></td>
+            <td colspan="21" class="subtitle">
+                Dicetak: {{ now()->format('d-m-Y H:i') }}
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="21"></td>
+        </tr>
+
+        <tr class="section-header">
+            <td colspan="21">Ringkasan Laporan</td>
+        </tr>
+
+        <tr>
+            <td class="bold">Total Transaksi</td>
+            <td class="text-center">{{ $totalTransaksi }}</td>
+
+            <td class="bold">Sistem Berjalan</td>
+            <td class="text-center">{{ $totalSistemBerjalan ?? 0 }}</td>
+
+            <td class="bold">Historis</td>
+            <td class="text-center">{{ $totalHistoris ?? 0 }}</td>
+
+            <td class="bold">Mempengaruhi Stok</td>
+            <td class="text-center">{{ $totalMemengaruhiStok ?? 0 }}</td>
+
+            <td class="bold">Tidak Mempengaruhi Stok</td>
+            <td class="text-center">{{ $totalTidakMemengaruhiStok ?? 0 }}</td>
+
+            <td class="bold">Lengkap</td>
+            <td class="text-center">{{ $totalLengkap ?? 0 }}</td>
+
+            <td class="bold">Sebagian</td>
+            <td class="text-center">{{ $totalSebagian ?? 0 }}</td>
+
+            <td class="bold">Belum Dikirim</td>
+            <td colspan="6" class="text-center">{{ $totalBelumDikirim ?? 0 }}</td>
+        </tr>
+
+        <tr>
+            <td class="bold">Total Dipesan</td>
+            <td colspan="3" class="text-center number-format">{{ $totalDipesan }}</td>
+
+            <td class="bold">Total Diterima</td>
+            <td colspan="3" class="text-center number-format">{{ $totalDiterima }}</td>
+
+            <td class="bold">Total Sisa</td>
+            <td colspan="3" class="text-center number-format">{{ $totalSisa }}</td>
+
+            <td class="bold">Total Subtotal</td>
+            <td colspan="3" class="text-right currency">{{ $totalSubtotal }}</td>
+
+            <td class="bold">Total Pajak</td>
+            <td class="text-right currency">{{ $totalPajak }}</td>
+
+            <td class="bold">Total Akhir</td>
+            <td colspan="2" class="text-right currency">{{ $totalAkhir }}</td>
+        </tr>
+
+        <tr>
+            <td colspan="21"></td>
         </tr>
 
         <tr class="header">
             <td>No</td>
             <td>Tanggal</td>
-            <td>Nomor Pembelian</td>
+            <td>No Pembelian Sistem</td>
+            <td>No Dokumen Asli</td>
+            <td>No DO Supplier</td>
+            <td>No Surat Jalan</td>
             <td>Supplier</td>
-            <td>Nomor Telepon</td>
+            <td>Telepon</td>
+            <td>NPWP</td>
             <td>Status Penerimaan</td>
+            <td>Tipe Invoice</td>
+            <td>Pengaruh Stok</td>
+            <td>Mode Pajak</td>
             <td>Jumlah Dipesan</td>
             <td>Jumlah Diterima</td>
             <td>Sisa Belum Dikirim</td>
@@ -70,6 +211,7 @@
             <td>Pajak</td>
             <td>Total Akhir</td>
             <td>Admin</td>
+            <td>Catatan</td>
         </tr>
 
         @foreach ($pembelian as $item)
@@ -83,12 +225,29 @@
         }
 
         $sisa = max($jumlahDipesan - $jumlahDiterima, 0);
-
         $statusPenerimaan = $item->status_penerimaan ?? 'lengkap';
+        $isHistoris = (bool) ($item->is_historical ?? false);
+        $affectStock = (bool) ($item->affect_stock ?? true);
+        $pajakDitambahkan = $item->pajak_ditambahkan ?? true;
+
+        $statusText = match ($statusPenerimaan) {
+        'lengkap' => 'Lengkap',
+        'sebagian' => 'Sebagian',
+        default => 'Belum Dikirim',
+        };
+
+        $tipeInvoice = $isHistoris ? 'Historis / Lama' : 'Sistem Berjalan';
+        $pengaruhStok = $affectStock ? 'Mempengaruhi stok' : 'Tidak mempengaruhi stok';
+
+        $modePajak = $pajakDitambahkan
+        ? 'Pajak ditambahkan ke total akhir'
+        : 'Pajak hanya ditampilkan';
+
         $nomorTelepon = $item->supplier->nomor_telepon ?? '-';
+        $npwp = $item->supplier->npwp ?? '-';
         @endphp
 
-        <tr>
+        <tr class="{{ $isHistoris ? 'historis' : 'sistem' }}">
             <td class="text-center">
                 {{ $loop->iteration }}
             </td>
@@ -97,15 +256,27 @@
                 {{ $item->tanggal_pembelian ? $item->tanggal_pembelian->format('d-m-Y') : '-' }}
             </td>
 
-            <td>
+            <td class="text-format">
                 {{ $item->nomor_pembelian }}
+            </td>
+
+            <td class="text-format">
+                {{ $item->nomor_dokumen_asli ?? '-' }}
+            </td>
+
+            <td class="text-format">
+                {{ $item->nomor_delivery_order ?? '-' }}
+            </td>
+
+            <td class="text-format">
+                {{ $item->nomor_surat_jalan ?? '-' }}
             </td>
 
             <td>
                 {{ $item->supplier->nama_supplier ?? '-' }}
             </td>
 
-            <td>
+            <td class="text-format">
                 @if ($nomorTelepon !== '-')
                 &#8203;{{ $nomorTelepon }}
                 @else
@@ -113,97 +284,91 @@
                 @endif
             </td>
 
-            <td>
-                @if ($statusPenerimaan === 'lengkap')
-                Lengkap
-                @elseif ($statusPenerimaan === 'sebagian')
-                Sebagian
+            <td class="text-format">
+                @if ($npwp !== '-')
+                &#8203;{{ $npwp }}
                 @else
-                Belum Dikirim
+                -
                 @endif
             </td>
 
+            <td class="text-center {{ $statusPenerimaan === 'lengkap' ? 'success' : ($statusPenerimaan === 'sebagian' ? 'warning' : 'danger') }}">
+                {{ $statusText }}
+            </td>
+
             <td class="text-center">
+                {{ $tipeInvoice }}
+            </td>
+
+            <td class="text-center">
+                {{ $pengaruhStok }}
+            </td>
+
+            <td>
+                {{ $modePajak }}
+            </td>
+
+            <td class="text-center number-format">
                 {{ $jumlahDipesan }}
             </td>
 
-            <td class="text-center">
+            <td class="text-center number-format">
                 {{ $jumlahDiterima }}
             </td>
 
-            <td class="text-center">
+            <td class="text-center number-format">
                 {{ $sisa }}
             </td>
 
-            <td class="text-right">
-                Rp {{ number_format($item->subtotal, 0, ',', '.') }}
+            <td class="text-right currency">
+                {{ $item->subtotal }}
             </td>
 
-            <td class="text-right">
-                Rp {{ number_format($item->nilai_pajak, 0, ',', '.') }}
+            <td class="text-right currency">
+                {{ $item->nilai_pajak }}
             </td>
 
-            <td class="text-right">
-                Rp {{ number_format($item->total_akhir, 0, ',', '.') }}
+            <td class="text-right currency">
+                {{ $item->total_akhir }}
             </td>
 
             <td>
                 {{ $item->user->nama_user ?? '-' }}
             </td>
+
+            <td>
+                {{ $item->catatan ?? '-' }}
+            </td>
         </tr>
         @endforeach
 
         <tr>
-            <td colspan="13"></td>
+            <td colspan="21"></td>
         </tr>
 
-        <tr>
-            <td colspan="6" class="bold">Total Transaksi</td>
-            <td colspan="7" class="text-center">
-                {{ $totalTransaksi }}
-            </td>
+        <tr class="total-row">
+            <td colspan="16" class="bold">TOTAL SUBTOTAL</td>
+            <td colspan="5" class="text-right currency">{{ $totalSubtotal }}</td>
         </tr>
 
-        <tr>
-            <td colspan="6" class="bold">Total Barang Dipesan</td>
-            <td colspan="7" class="text-center">
-                {{ $totalDipesan }}
-            </td>
+        <tr class="total-row">
+            <td colspan="16" class="bold">TOTAL PAJAK</td>
+            <td colspan="5" class="text-right currency">{{ $totalPajak }}</td>
         </tr>
 
-        <tr>
-            <td colspan="6" class="bold">Total Barang Diterima</td>
-            <td colspan="7" class="text-center">
-                {{ $totalDiterima }}
-            </td>
+        <tr class="total-row">
+            <td colspan="16" class="bold">TOTAL AKHIR</td>
+            <td colspan="5" class="text-right currency">{{ $totalAkhir }}</td>
         </tr>
 
-        <tr>
-            <td colspan="6" class="bold">Total Sisa Belum Dikirim</td>
-            <td colspan="7" class="text-center">
-                {{ $totalSisa }}
-            </td>
+        <tr class="total-row">
+            <td colspan="16" class="bold">TOTAL BARANG DITERIMA</td>
+            <td colspan="5" class="text-center number-format">{{ $totalDiterima }}</td>
         </tr>
 
-        <tr>
-            <td colspan="6" class="bold">Total Subtotal</td>
-            <td colspan="7" class="text-right">
-                Rp {{ number_format($totalSubtotal, 0, ',', '.') }}
-            </td>
-        </tr>
-
-        <tr>
-            <td colspan="6" class="bold">Total Pajak</td>
-            <td colspan="7" class="text-right">
-                Rp {{ number_format($totalPajak, 0, ',', '.') }}
-            </td>
-        </tr>
-
-        <tr>
-            <td colspan="6" class="bold">Total Akhir</td>
-            <td colspan="7" class="text-right">
-                Rp {{ number_format($totalAkhir, 0, ',', '.') }}
-            </td>
+        <tr class="total-row">
+            <td colspan="16" class="bold">TOTAL SISA BELUM DIKIRIM</td>
+            <td colspan="5" class="text-center number-format">{{ $totalSisa }}</td>
         </tr>
     </table>
 </body>

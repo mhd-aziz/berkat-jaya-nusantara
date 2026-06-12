@@ -10,7 +10,7 @@
                 </p>
             </div>
 
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('invoice-historis.pembelian.create') }}"
                     class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">
                     + Invoice Pembelian Lama
@@ -33,19 +33,24 @@
             </div>
             @endif
 
+            @if (session('error'))
+            <div class="mb-4 p-4 bg-red-100 text-red-800 rounded-md">
+                {{ session('error') }}
+            </div>
+            @endif
+
             <div class="mb-6 p-5 bg-yellow-50 border border-yellow-200 rounded-xl">
                 <h3 class="font-semibold text-yellow-900 mb-1">
                     Catatan Penting
                 </h3>
                 <p class="text-sm text-yellow-800">
                     Invoice historis digunakan untuk mencatat transaksi lama sebelum sistem berjalan.
-                    Data ini masuk ke laporan, tetapi tidak memengaruhi stok barang saat ini.
+                    Data ini masuk ke laporan dan piutang jika kredit, tetapi tidak memengaruhi stok barang saat ini.
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 gap-6">
 
-                {{-- Pembelian Historis --}}
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
@@ -53,7 +58,7 @@
                                 Invoice Pembelian Lama
                             </h3>
                             <p class="text-sm text-gray-500">
-                                Data pembelian lama dari supplier.
+                                Data pembelian lama dari supplier. Tidak menambah stok barang.
                             </p>
                         </div>
 
@@ -73,6 +78,7 @@
                                     <th class="border px-3 py-2 text-left">Tanggal</th>
                                     <th class="border px-3 py-2 text-left">Supplier</th>
                                     <th class="border px-3 py-2 text-right">Total</th>
+                                    <th class="border px-3 py-2 text-center">Aksi</th>
                                 </tr>
                             </thead>
 
@@ -84,14 +90,19 @@
                                     </td>
 
                                     <td class="border px-3 py-2">
-                                        {{ $item->nomor_pembelian }}
+                                        <div class="font-semibold">
+                                            {{ $item->nomor_pembelian }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            Historis
+                                        </div>
                                     </td>
 
                                     <td class="border px-3 py-2">
                                         {{ $item->nomor_dokumen_asli ?? '-' }}
                                     </td>
 
-                                    <td class="border px-3 py-2">
+                                    <td class="border px-3 py-2 whitespace-nowrap">
                                         {{ $item->tanggal_pembelian ? $item->tanggal_pembelian->format('d-m-Y') : '-' }}
                                     </td>
 
@@ -102,10 +113,29 @@
                                     <td class="border px-3 py-2 text-right font-semibold">
                                         Rp {{ number_format($item->total_akhir, 0, ',', '.') }}
                                     </td>
+
+                                    <td class="border px-3 py-2">
+                                        <div class="flex flex-wrap justify-center gap-2">
+                                            <a href="{{ route('invoice-historis.pembelian.show', ['pembelian' => $item->id_pembelian, 'back_url' => route('invoice-historis.index')]) }}"
+                                                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                                Detail / Print
+                                            </a>
+
+                                            <a href="{{ route('invoice-historis.pembelian.exportExcel', $item->id_pembelian) }}"
+                                                class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                                                Excel
+                                            </a>
+
+                                            <a href="{{ route('invoice-historis.pembelian.edit', $item->id_pembelian) }}"
+                                                class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                                                Edit
+                                            </a>
+                                        </div>
+                                    </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="6" class="border px-3 py-4 text-center text-gray-500">
+                                    <td colspan="7" class="border px-3 py-4 text-center text-gray-500">
                                         Belum ada invoice pembelian lama.
                                     </td>
                                 </tr>
@@ -115,7 +145,6 @@
                     </div>
                 </div>
 
-                {{-- Penjualan Historis --}}
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div>
@@ -123,7 +152,7 @@
                                 Invoice Penjualan Lama
                             </h3>
                             <p class="text-sm text-gray-500">
-                                Data penjualan lama kepada customer.
+                                Data penjualan lama kepada customer. Tidak mengurangi stok barang.
                             </p>
                         </div>
 
@@ -144,6 +173,7 @@
                                     <th class="border px-3 py-2 text-left">Customer</th>
                                     <th class="border px-3 py-2 text-center">Metode</th>
                                     <th class="border px-3 py-2 text-right">Total</th>
+                                    <th class="border px-3 py-2 text-center">Aksi</th>
                                 </tr>
                             </thead>
 
@@ -155,14 +185,19 @@
                                     </td>
 
                                     <td class="border px-3 py-2">
-                                        {{ $item->nomor_invoice }}
+                                        <div class="font-semibold">
+                                            {{ $item->nomor_invoice }}
+                                        </div>
+                                        <div class="text-xs text-gray-500">
+                                            Historis
+                                        </div>
                                     </td>
 
                                     <td class="border px-3 py-2">
                                         {{ $item->nomor_dokumen_asli ?? '-' }}
                                     </td>
 
-                                    <td class="border px-3 py-2">
+                                    <td class="border px-3 py-2 whitespace-nowrap">
                                         {{ $item->tanggal_penjualan ? $item->tanggal_penjualan->format('d-m-Y') : '-' }}
                                     </td>
 
@@ -177,10 +212,29 @@
                                     <td class="border px-3 py-2 text-right font-semibold">
                                         Rp {{ number_format($item->total_akhir, 0, ',', '.') }}
                                     </td>
+
+                                    <td class="border px-3 py-2">
+                                        <div class="flex flex-wrap justify-center gap-2">
+                                            <a href="{{ route('invoice-historis.penjualan.show', ['penjualan' => $item->id_penjualan, 'back_url' => route('invoice-historis.index')]) }}"
+                                                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                                Detail / Print
+                                            </a>
+
+                                            <a href="{{ route('invoice-historis.penjualan.exportExcel', $item->id_penjualan) }}"
+                                                class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700">
+                                                Excel
+                                            </a>
+
+                                            <a href="{{ route('invoice-historis.penjualan.edit', $item->id_penjualan) }}"
+                                                class="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600">
+                                                Edit
+                                            </a>
+                                        </div>
+                                    </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="7" class="border px-3 py-4 text-center text-gray-500">
+                                    <td colspan="8" class="border px-3 py-4 text-center text-gray-500">
                                         Belum ada invoice penjualan lama.
                                     </td>
                                 </tr>
