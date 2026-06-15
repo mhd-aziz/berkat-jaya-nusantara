@@ -115,13 +115,21 @@
                 transform: translateY(-50%);
                 width: 62px;
                 height: 62px;
-                border: 1.5px dashed var(--invoice-primary);
+                border: none;
                 border-radius: 6px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
                 background: #ffffff;
+                overflow: hidden;
+            }
+
+            .invoice-logo {
+                width: 58px;
+                height: 58px;
+                object-fit: contain;
+                display: block;
             }
 
             .company-kop {
@@ -537,9 +545,17 @@
                     left: 0 !important;
                     width: 14mm !important;
                     height: 14mm !important;
-                    border-color: var(--invoice-primary) !important;
+                    border: none !important;
                     border-radius: 2px !important;
                     background: #ffffff !important;
+                    overflow: hidden !important;
+                }
+
+                .invoice-logo {
+                    width: 13mm !important;
+                    height: 13mm !important;
+                    object-fit: contain !important;
+                    display: block !important;
                 }
 
                 .company-kop {
@@ -801,7 +817,12 @@
                     @foreach (['CUSTOMER', 'ARSIP PERUSAHAAN'] as $copyIndex => $copyLabel)
                     <div class="invoice-copy">
                         <div class="invoice-copy-header">
-                            <div class="logo-placeholder"></div>
+                            <div class="logo-placeholder">
+                                <img
+                                    src="{{ asset('assets/img/logo-bjn.png') }}"
+                                    alt="Logo Berkat Jaya Nusantara"
+                                    class="invoice-logo">
+                            </div>
 
                             <div class="company-kop">
                                 <div class="company-name">

@@ -8,9 +8,12 @@
 
                 <!-- Logo / App Name -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
-                        <div class="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center font-bold">
-                            BJN
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
+                        <div class="w-14 h-14 bg-white border border-gray-200 rounded-xl flex items-center justify-center shadow-sm overflow-hidden">
+                            <img
+                                src="{{ asset('assets/img/logo-bjn.png') }}"
+                                alt="Logo Berkat Jaya Nusantara"
+                                class="w-12 h-12 object-contain">
                         </div>
 
                         <div class="hidden md:block">
@@ -137,6 +140,7 @@
                         </x-slot>
                     </x-dropdown>
 
+                    <!-- Laporan Dropdown -->
                     <x-dropdown align="left" width="56">
                         <x-slot name="trigger">
                             <button class="inline-flex items-center px-3 py-2 text-sm font-medium rounded-md transition
@@ -178,9 +182,6 @@
                             </x-dropdown-link>
                         </x-slot>
                     </x-dropdown>
-
-                    <!-- Quick Create Dropdown -->
-
                 </div>
             </div>
 

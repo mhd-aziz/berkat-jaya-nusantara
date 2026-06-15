@@ -37,7 +37,7 @@
 
                             <input type="text"
                                 name="nomor_pembelian"
-                                value="{{ old('nomor_pembelian', $nomorPembelian) }}"
+                                value=""
                                 placeholder="Contoh: INV-SUP-001 atau PB-20260612-0001"
                                 class="w-full border-gray-300 rounded-md shadow-sm"
                                 required>
@@ -54,7 +54,7 @@
 
                             <input type="text"
                                 name="nomor_delivery_order"
-                                value="{{ old('nomor_delivery_order', $nomorDeliveryOrder ?? '') }}"
+                                value=""
                                 placeholder="Contoh: DO-SUP-20260612-0001"
                                 class="w-full border-gray-300 rounded-md shadow-sm">
 
@@ -70,7 +70,7 @@
 
                             <input type="text"
                                 name="nomor_surat_jalan"
-                                value="{{ old('nomor_surat_jalan', $nomorSuratJalan ?? '') }}"
+                                value=""
                                 placeholder="Contoh: SJ-SUP-20260612-0001"
                                 class="w-full border-gray-300 rounded-md shadow-sm">
 
